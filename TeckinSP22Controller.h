@@ -12,6 +12,7 @@
 #include <HLW8012.h>
 #include <DebounceEvent.h>
 #include "RelaySet.h"
+#include "ActionScheduler.h"
 
 //#define DEBUG_SERIAL
 
