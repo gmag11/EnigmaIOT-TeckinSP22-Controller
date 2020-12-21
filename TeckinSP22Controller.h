@@ -11,6 +11,7 @@
 
 #include <HLW8012.h>
 #include <DebounceEvent.h>
+#include "RelaySet.h"
 
 //#define DEBUG_SERIAL
 
@@ -46,6 +47,7 @@ constexpr auto RELAY = 14;
 
 #define RELAY_ON HIGH
 #define RELAY_OFF !RELAY_ON
+#define NUM_RELAYS 1
 
 #define LED_ON LOW
 #define RELED_OFF !LED_ON
@@ -129,8 +131,9 @@ protected:
 	bool doCalibration = false;
 	DebounceEvent* button;
 	bool restartTriggd = false;
-	bool relayStatus;
+	//bool relayStatus;
 	double lastEnergy;
+    RelaySet *relays;
 
 	void setInterrupts ();
 
@@ -138,9 +141,9 @@ protected:
 
 	void callback (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
 
-	void setRelay (bool state);
+	//void setRelay (bool state);
 
-	void toggleRelay ();
+	//void toggleRelay ();
 
 	bool sendRelayStatus ();
 

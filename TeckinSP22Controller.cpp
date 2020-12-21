@@ -136,14 +136,14 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				switch (value) {
 				case 0:
 					DEBUG_WARN ("setRelay (false)");
-					setRelay (false);
+                    relays->set (0, false);
 					break;
 				case 1:
 					DEBUG_WARN ("setRelay (true)");
-					setRelay (true);
+                    relays->set (0, true);
 					break;
 				case 2:
-					toggleRelay ();
+                    relays->toggle (0);
 					break;
 				default:
 					return false;
@@ -228,7 +228,7 @@ void CONTROLLER_CLASS_NAME::callback (uint8_t pin, uint8_t event, uint8_t count,
 		switch (count) {
 		case 2:
 			if (length < 1000) {
-				toggleRelay ();
+                relays->toggle (0);
 				sendRelayStatus ();
 			}
 			break;
@@ -251,7 +251,10 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	digitalWrite (RED_LED_INV, HIGH);
 	pinMode (BLUE_LED_INV, OUTPUT);
 	digitalWrite (BLUE_LED_INV, HIGH);
-	pinMode (RELAY, OUTPUT);
+	//pinMode (RELAY, OUTPUT);
+    uint8_t relayPins[] = { RELAY };
+    uint8_t relayOnStates[] = { RELAY_ON };
+    relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
 
 
 	// Send a 'hello' message when initalizing is finished
@@ -264,7 +267,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	hlw8012.setVoltageMultiplier (HLW8012_VOLTAGE_RATIO);
 	setInterrupts ();
 
-	relayStatus = digitalRead (RELAY) == RELAY_ON;
+    //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
 
 	if (!sendRelayStatus ()) {
@@ -293,7 +296,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 		double dcurrent = (energy - lastEnergy) * period / voltage;
 		json["dcurrent"] = dcurrent;
 	}
-    json["rly"] = relayStatus;
+    json["rly"] = relays->get(0);
 	lastEnergy = energy;
 
 	sendJson (json);
@@ -313,7 +316,7 @@ void CONTROLLER_CLASS_NAME::loop () {
 	}
 
 	// TODO: Sync LED with relay
-	digitalWrite (RELAY_LED, relayStatus ? LED_ON : LED_OFF);
+	digitalWrite (RELAY_LED, relays->get(0) ? LED_ON : LED_OFF);
 }
 
 CONTROLLER_CLASS_NAME::~CONTROLLER_CLASS_NAME () {
@@ -342,42 +345,12 @@ bool CONTROLLER_CLASS_NAME::saveConfig () {
 	return true;
 }
 
-void CONTROLLER_CLASS_NAME::setRelay (bool state) {
-	DEBUG_WARN ("Set relay %s", state ? "ON" : "OFF");
-	relayStatus = state;
-	digitalWrite (RELAY, relayStatus ? RELAY_ON : RELAY_OFF);
-	//sendDebug ("relayStatus --> %s", relayStatus ? "true" : "false");
-	//digitalWrite (RELAY_LED, relayStatus ? LED_ON : LED_OFF);
-	//if (config.bootStatus == SAVE_RELAY_STATUS) {
-	//	if (saveConfig ()) {
-	//		DEBUG_WARN ("Config updated. Relay is %s", config.relayStatus ? "ON" : "OFF");
-	//	} else {
-	//		DEBUG_ERROR ("Error saving config");
-	//	}
-	//}
-}
-
-void CONTROLLER_CLASS_NAME::toggleRelay () {
-	DEBUG_WARN ("Toggle relay");
-	relayStatus = !relayStatus;
-	digitalWrite (RELAY, relayStatus ? RELAY_ON : RELAY_OFF);
-	//digitalWrite (RELAY_LED, relayStatus ? LED_ON : LED_OFF);
-	//if (config.bootStatus == SAVE_RELAY_STATUS) {
-	//	if (saveConfig ()) {
-	//		DEBUG_WARN ("Config updated. Relay is %s", config.relayStatus ? "ON" : "OFF");
-	//	} else {
-	//		DEBUG_ERROR ("Error saving config");
-	//	}
-	//}
-	//sendRelayStatus ();
-}
-
 bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
 	const size_t capacity = JSON_OBJECT_SIZE (2);
 	DynamicJsonDocument json (capacity);
 
 	json[commandKey] = relayKey;
-	json[relayKey] = relayStatus ? 1 : 0;
+    json[relayKey] = relays->get (0) ? 1 : 0;
 
 	return sendJson (json);
 }
