@@ -135,6 +135,7 @@ protected:
 	//bool relayStatus;
 	double lastEnergy;
     RelaySet *relays;
+    ActionScheduler scheduler;
 
 	void setInterrupts ();
 

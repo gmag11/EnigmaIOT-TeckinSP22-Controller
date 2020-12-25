@@ -307,6 +307,8 @@ void CONTROLLER_CLASS_NAME::loop () {
 	// If your node stays allways awake do your periodic task here
 
 	button->loop ();
+    
+    scheduler.loop ();
 
 	static unsigned long last = millis ();
 
