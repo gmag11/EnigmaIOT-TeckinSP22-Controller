@@ -99,9 +99,9 @@ void ActionScheduler::loop () {
     for (int8_t i = 0; i < SCHED_MAX_ENTRIES; i++) {
         if (entries[i].used) {
             bool today = checkWeekDay (entries[i].weekMask, splitTime->tm_wday);
-            //Serial.printf ("loop: i %d enabled %d executed %d today %d repeat %d Alarm %02u:%02u Time %02u:%02u:%02u\n", \
-                        i, entries[i].enabled, entries[i].executed, today, entries[i].repeat, \
-                        entries[i].hour, entries[i].minute, splitTime->tm_hour, splitTime->tm_min, splitTime->tm_sec);
+            //Serial.printf ("loop: i %d enabled %d executed %d today %d repeat %d Alarm %02u:%02u Time %02u:%02u:%02u\n",
+            //            i, entries[i].enabled, entries[i].executed, today, entries[i].repeat,
+            //            entries[i].hour, entries[i].minute, splitTime->tm_hour, splitTime->tm_min, splitTime->tm_sec);
             if (entries[i].enabled &&
                 !entries[i].executed &&
                 today &&
@@ -138,8 +138,8 @@ bool ActionScheduler::checkWeekDay (uint8_t weekMask, int weekDay) {
     
     bool result = (weekMask & today) != 0;
     
-    //Serial.printf ("Today: %d => " BYTE_TO_BINARY_PATTERN ". weekMask " BYTE_TO_BINARY_PATTERN ". Match: %d\n", \
-                        weekDay,   BYTE_TO_BINARY (today),              BYTE_TO_BINARY(weekMask),     result);
+    //Serial.printf ("Today: %d => " BYTE_TO_BINARY_PATTERN ". weekMask " BYTE_TO_BINARY_PATTERN ". Match: %d\n",
+    //                    weekDay,   BYTE_TO_BINARY (today),              BYTE_TO_BINARY(weekMask),     result);
     
     return result;
 }
