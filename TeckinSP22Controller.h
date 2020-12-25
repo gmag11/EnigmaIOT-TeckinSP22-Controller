@@ -9,10 +9,17 @@
 	#include "WProgram.h"
 #endif
 
+#ifndef HLW8012
+#define HLW8012 1
+#endif //HLW8012
+
+#if HLW8012
 #include <HLW8012.h>
+#endif // HLW8012
 #include <DebounceEvent.h>
 #include "RelaySet.h"
 #include "ActionScheduler.h"
+#include <TZ.h>
 
 //#define DEBUG_SERIAL
 
@@ -28,11 +35,12 @@ static const char* CONTROLLER_NAME = "Teckin SP22 v1.4";
 //constexpr auto BLUE_LED = 2;
 constexpr auto BUTTON = 1;
 constexpr auto RED_LED_INV = 3;
+constexpr auto BLUE_LED_INV = 13;
+constexpr auto RELAY = 14;
+#if HLW8012
 constexpr auto HLW_CF = 4;
 constexpr auto HLW_CF1 = 5;
 constexpr auto HLW_SEL = 12;
-constexpr auto BLUE_LED_INV = 13;
-constexpr auto RELAY = 14;
 
 #define UPDATE_TIME                     10000
 #define CURRENT_MODE                    LOW
@@ -45,6 +53,7 @@ constexpr auto RELAY = 14;
 #define HLW8012_VOLTAGE_RATIO       281105 //264935
 #define HLW8012_POWER_RATIO         3304057 //2533110
 #define HLW8012_INTERRUPT_ON        FALLING
+#endif // HLW8012
 
 #define RELAY_ON HIGH
 #define RELAY_OFF !RELAY_ON
@@ -108,6 +117,8 @@ protected:
 	  * @return Returns `true` if save was successful. `false` otherwise
 	  */
 	bool saveConfig ();
+    
+    void onSchedulerEvent (sched_event_t event);
 	
 	bool sendCommandResp (const char* command, bool result);
 	
@@ -137,10 +148,14 @@ protected:
     RelaySet *relays;
     ActionScheduler scheduler;
 
+#if HLW8012
 	void setInterrupts ();
 
 	void calibrate ();
 
+    void sendHLWmeasurement ();
+#endif // HLW8012
+    
 	void callback (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
 
 	//void setRelay (bool state);
@@ -150,8 +165,6 @@ protected:
 	bool sendRelayStatus ();
 
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
-
-	void sendHLWmeasurement ();
 
 };
 

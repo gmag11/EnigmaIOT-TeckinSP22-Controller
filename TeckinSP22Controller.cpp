@@ -15,7 +15,9 @@ constexpr auto CONFIG_FILE = "/customconf.json"; ///< @brief Custom configuratio
 // You may add some global variables you need here,
 // like serial port instances, I2C, etc
 // -----------------------------------------
+#if HLW8012
 HLW8012 hlw8012;
+#endif
 
 const char* relayKey = "rly";
 const char* commandKey = "cmd";
@@ -25,6 +27,7 @@ const char* buttonKey = "button";
 const char* linkKey = "link";
 const char* bootStateKey = "bstate";
 
+#if HLW8012
 void ICACHE_RAM_ATTR hlw8012_cf1_interrupt () {
 	hlw8012.cf1_interrupt ();
 }
@@ -36,7 +39,6 @@ void CONTROLLER_CLASS_NAME::setInterrupts () {
 	attachInterrupt (HLW_CF1, hlw8012_cf1_interrupt, HLW8012_INTERRUPT_ON);
 	attachInterrupt (HLW_CF, hlw8012_cf_interrupt, HLW8012_INTERRUPT_ON);
 }
-
 void CONTROLLER_CLASS_NAME::calibrate () {
 	// Let some time to register values
 	unsigned long timeout = millis ();
@@ -54,6 +56,7 @@ void CONTROLLER_CLASS_NAME::calibrate () {
 	//debugW ("[HLW] New voltage multiplier : %f", hlw8012.getVoltageMultiplier ());
 	//debugW ("[HLW] New power multiplier   : %f", hlw8012.getPowerMultiplier ());
 }
+#endif // HLW8012
 
 bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint8_t* buffer, uint8_t length, nodeMessageType_t command, nodePayloadEncoding_t payloadEncoding) {
 	// Process incoming messages here
@@ -256,9 +259,11 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
     uint8_t relayOnStates[] = { RELAY_ON };
     relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
 
+    scheduler.onEvent (std::bind (&CONTROLLER_CLASS_NAME::onSchedulerEvent, this, _1));
 
 	// Send a 'hello' message when initalizing is finished
 	sendStartAnouncement ();
+#if HLW8012
 
 	hlw8012.begin (HLW_CF, HLW_CF1, HLW_SEL, CURRENT_MODE, true);
 	hlw8012.setResistors (CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
@@ -266,6 +271,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	hlw8012.setPowerMultiplier (HLW8012_POWER_RATIO);
 	hlw8012.setVoltageMultiplier (HLW8012_VOLTAGE_RATIO);
 	setInterrupts ();
+#endif // HLW8012
 
     //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
@@ -280,6 +286,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
 }
 
+#if HLW8012
 void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	const size_t capacity = JSON_OBJECT_SIZE (8);
 	DynamicJsonDocument json (capacity);
@@ -301,6 +308,11 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 
 	sendJson (json);
 }
+#endif // HLW8012
+
+void CONTROLLER_CLASS_NAME::onSchedulerEvent (sched_event_t event) {
+    DEBUG_WARN ("Scheduler event %d, index %d, repeat %d", event.action, event.index, event.repeat);
+}
 
 void CONTROLLER_CLASS_NAME::loop () {
 
@@ -312,10 +324,12 @@ void CONTROLLER_CLASS_NAME::loop () {
 
 	static unsigned long last = millis ();
 
+#if HLW8012
 	if ((millis () - last) > UPDATE_TIME && !enigmaIotNode->getOTArunning()) {
 		last = millis ();
 		sendHLWmeasurement ();
 	}
+#endif // HLW8012
 
 	// TODO: Sync LED with relay
 	digitalWrite (RELAY_LED, relays->get(0) ? LED_ON : LED_OFF);
