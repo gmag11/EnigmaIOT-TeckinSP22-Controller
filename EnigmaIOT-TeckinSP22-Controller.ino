@@ -119,11 +119,15 @@ void setup () {
 	EnigmaIOTNode.onConnected (connectEventHandler); // Configure registration handler
 	EnigmaIOTNode.onDisconnected (disconnectEventHandler); // Configure unregistration handler
 	EnigmaIOTNode.onDataRx (processRxData); // Configure incoming data handler
-	EnigmaIOTNode.enableClockSync (false); // Set to true if you need this node to get its clock syncronized with gateway
+	EnigmaIOTNode.enableClockSync (true); // Set to true if you need this node to get its clock syncronized with gateway
 	EnigmaIOTNode.onWiFiManagerStarted (wifiManagerStarted);
 	EnigmaIOTNode.onWiFiManagerExit (wifiManagerExit);
 	EnigmaIOTNode.enableBroadcast ();
 
+    char timezone[255];
+    strncpy (timezone, TZ_Europe_Madrid, 255);
+    setenv ("TZ", timezone, 1);
+    
 	if (!controller->loadConfig ()) { // Trigger custom configuration loading
 		DEBUG_WARN ("Error reading config file");
 		if (FILESYSTEM.format ())
