@@ -270,3 +270,11 @@ char* ActionScheduler::getJsonChr () {
     
     return output;
 }
+
+bool ActionScheduler::enable (uint8_t index, bool enableFlag) {
+    if (index < SCHED_MAX_ENTRIES) {
+        entries[index].enabled = enableFlag;
+        return true;
+    }
+    return false;
+}

@@ -58,6 +58,8 @@ public:
     
     bool remove (uint8_t index);
     
+    bool enable (uint8_t index, bool enableFlag);
+    
     int8_t replace (uint8_t index, schedule_t* entry);
     
     schedule_t* get (uint8_t index);
