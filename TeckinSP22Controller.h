@@ -33,10 +33,16 @@ static const char* CONTROLLER_NAME = "Teckin SP22 v1.4";
 // --------------------------------------------------
 //constexpr auto RED_LED = 0;
 //constexpr auto BLUE_LED = 2;
+#ifndef BUTTON
 constexpr auto BUTTON = 1;
+#endif
 constexpr auto RED_LED_INV = 3;
+#ifndef BLUE_LED_INV
 constexpr auto BLUE_LED_INV = 13;
+#endif
+#ifndef RELAY
 constexpr auto RELAY = 14;
+#endif
 #if HLW8012
 constexpr auto HLW_CF = 4;
 constexpr auto HLW_CF1 = 5;
@@ -156,7 +162,7 @@ protected:
     void sendHLWmeasurement ();
 #endif // HLW8012
     
-	void callback (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
+	void buttonCb (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
 
 	//void setRelay (bool state);
 

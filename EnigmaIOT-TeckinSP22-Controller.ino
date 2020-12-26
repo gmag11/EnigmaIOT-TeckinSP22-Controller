@@ -52,7 +52,9 @@
 #endif // !LED_BUILTIN
 
 // If you do need serial for your project you must disable serial debug by commenting next line
+#ifndef USE_SERIAL
 //#define USE_SERIAL // Don't forget to set DEBUG_LEVEL to NONE if serial is disabled
+#endif
 
 #define BLUE_LED BLUE_LED_INV // You can set a different LED pin here. -1 means disabled
 

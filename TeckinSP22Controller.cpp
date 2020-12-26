@@ -223,7 +223,7 @@ void CONTROLLER_CLASS_NAME::sendButtonEvent (uint8_t pin, uint8_t event, uint8_t
 	sendJson (json);
 }
 
-void CONTROLLER_CLASS_NAME::callback (uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
+void CONTROLLER_CLASS_NAME::buttonCb (uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
 	//bool stateRed, stateBlue;
 
 	if (event == EVENT_RELEASED || event == EVENT_CHANGED) {
@@ -249,7 +249,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	enigmaIotNode = node;
 
 	// You do node setup here. Use it as it was the normal setup() Arduino function
-	button = new DebounceEvent (BUTTON, std::bind(&CONTROLLER_CLASS_NAME::callback, this, _1, _2, _3, _4), BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
+	button = new DebounceEvent (BUTTON, std::bind(&CONTROLLER_CLASS_NAME::buttonCb, this, _1, _2, _3, _4), BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
 	pinMode (RED_LED_INV, OUTPUT);
 	digitalWrite (RED_LED_INV, HIGH);
 	pinMode (BLUE_LED_INV, OUTPUT);
@@ -322,9 +322,8 @@ void CONTROLLER_CLASS_NAME::loop () {
     
     scheduler.loop ();
 
-	static unsigned long last = millis ();
-
 #if HLW8012
+    static unsigned long last = millis ();
 	if ((millis () - last) > UPDATE_TIME && !enigmaIotNode->getOTArunning()) {
 		last = millis ();
 		sendHLWmeasurement ();
