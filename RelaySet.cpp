@@ -19,17 +19,20 @@ RelaySet::RelaySet (uint8_t* pins, uint8_t* onState, uint8_t num) {
 void RelaySet::set (uint8_t index, bool status) {
     // Serial.printf ("Set relay #%d to %s\n", index, status ? "ON" : "OFF");
     if (index < numRelays) {
-        bool newStatus = relays[index].onState ? status : !status;
-        digitalWrite (relays[index].pin, newStatus);
+        //bool newStatus = relays[index].onState ? status : !status;
+        relays[index].status = status;
+        digitalWrite (relays[index].pin, relays[index].onState ? status : !status);
         // Serial.println("OK");
     }
 }
 
 bool RelaySet::toggle (uint8_t index) {
     if (index < numRelays) {
-        bool newStatus = !relays[index].status;
-        digitalWrite (relays[index].pin, newStatus);
-        return newStatus;
+        relays[index].status = !relays[index].status;
+        //relays[index].status = newStatus;
+        //Serial.printf ("Toggle %d to %d\n", index, relays[index].status);
+        digitalWrite (relays[index].pin, relays[index].onState ? relays[index].status : !relays[index].status);
+        return relays[index].status;
     }
     return false;
 }

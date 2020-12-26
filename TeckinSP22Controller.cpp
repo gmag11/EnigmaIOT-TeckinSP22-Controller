@@ -125,29 +125,33 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 	}
 
 	if (command == nodeMessageType_t::DOWNSTREAM_DATA_SET) {
+        int index = 0;
 		if (!strcmp (doc[commandKey], relayKey)) {
 			if (!doc.containsKey (relayKey)) {
 				DEBUG_WARN ("Wrong format");
 				return false;
 			}
+            if (doc.containsKey ("index")){
+                index = doc["index"].as<int> ();
+            }
 			char temp[200];
 			serializeJson (doc, temp, 200);
-			DEBUG_WARN ("%s", temp);
-			DEBUG_WARN ("Set relay status. Relay = %d", doc[relayKey].as<int> ());
+			DEBUG_DBG ("%s", temp);
+            DEBUG_INFO ("Set relay status. Relay %d = %d", index, doc[relayKey].as<int> ());
 			if (doc[relayKey].is<int> ()) {
 				int value = doc[relayKey].as<int> ();
-				DEBUG_WARN ("%s is %d", relayKey, value);
+				DEBUG_DBG ("%s is %d", relayKey, value);
 				switch (value) {
 				case 0:
-					DEBUG_WARN ("setRelay (false)");
-                    relays->set (0, false);
+					DEBUG_INFO ("setRelay (false)");
+                    relays->set (index, false);
 					break;
 				case 1:
-					DEBUG_WARN ("setRelay (true)");
-                    relays->set (0, true);
+					DEBUG_INFO ("setRelay (true)");
+                    relays->set (index, true);
 					break;
 				case 2:
-                    relays->toggle (0);
+                    relays->toggle (index);
 					break;
 				default:
 					return false;
