@@ -175,6 +175,8 @@ protected:
 	//void toggleRelay ();
 
 	bool sendRelayStatus ();
+    
+    bool sendSchedulerList (char* list);
 
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
 

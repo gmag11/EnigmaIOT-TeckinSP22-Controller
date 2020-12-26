@@ -106,7 +106,16 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				DEBUG_WARN ("Error sending relay status");
 				return false;
 			}
-		} /*else if (!strcmp (doc[commandKey], linkKey)) {
+        } else if (!strcmp (doc[commandKey], scheduleKey)) {
+            DEBUG_WARN ("Request schedule list");
+            char* schedStr = scheduler.getJsonChr ();
+            if (!sendSchedulerList (schedStr)) {
+                DEBUG_WARN ("Error sending schedule list");
+                return false;
+            }
+
+        }
+        /*else if (!strcmp (doc[commandKey], linkKey)) {
 			DEBUG_WARN ("Request link status. Link = %s", config.linked ? "enabled" : "disabled");
 			if (!sendLinkStatus ()) {
 				DEBUG_WARN ("Error sending link status");
@@ -131,8 +140,8 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				DEBUG_WARN ("Wrong format");
 				return false;
 			}
-            if (doc.containsKey ("index")){
-                index = doc["index"].as<int> ();
+            if (doc.containsKey ("idx")){
+                index = doc["idx"].as<int> ();
             }
 			char temp[200];
 			serializeJson (doc, temp, 200);
