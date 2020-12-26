@@ -378,6 +378,26 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 
 void CONTROLLER_CLASS_NAME::onSchedulerEvent (sched_event_t event) {
     DEBUG_WARN ("Scheduler event %d, index %d, repeat %d", event.action, event.index, event.repeat);
+    if (event.action < TURN_OFF || event.action > TOGGLE) {
+        DEBUG_WARN ("Schedule action error");
+        return;
+    }
+    if (event.index < 0 || event.index >= NUM_RELAYS){
+        DEBUG_WARN ("Schedule index error");
+        return;
+    }
+    switch (event.action) {
+        case TURN_OFF:
+        case TURN_ON:
+            relays->set (event.index, event.action);
+            break;
+        case TOGGLE:
+            relays->toggle (event.index);
+            break;
+        default:
+            break;
+    }
+    sendRelayStatus ();
 }
 
 void CONTROLLER_CLASS_NAME::loop () {
