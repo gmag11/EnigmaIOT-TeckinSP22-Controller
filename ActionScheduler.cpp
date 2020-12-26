@@ -99,6 +99,7 @@ void ActionScheduler::loop () {
                     entries[i].executed = true; // Mark as executed
                     if (!entries[i].repeat) {
                         entries[i].enabled = false;
+                        entries[i].used = false;
                     }
                     sched_event_t event;
                     event.action = entries[i].action;
