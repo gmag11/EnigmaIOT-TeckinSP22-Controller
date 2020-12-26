@@ -451,7 +451,11 @@ bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
 	DynamicJsonDocument json (capacity);
 
 	json[commandKey] = relayKey;
-    json[relayKey] = relays->get (0) ? 1 : 0;
+    String key = relayKey;
+    for (uint i = 0; i < NUM_RELAYS; i++) {
+        key += i;
+        json[key.c_str()] = relays->get (i) ? 1 : 0;    
+    }
 
 	return sendJson (json);
 }
