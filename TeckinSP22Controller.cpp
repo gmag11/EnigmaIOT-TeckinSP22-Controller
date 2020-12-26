@@ -183,7 +183,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             *****/
             schedule_t sched_entry;
             
-            if (!doc.containsKey ("hour") || !doc.containsKey ("min") || !doc.containsKey ("action") || !doc.containsKey ("index")) {
+            if (!doc.containsKey ("hour") || !doc.containsKey ("min") || !doc.containsKey ("action") || !doc.containsKey ("idx")) {
                 DEBUG_WARN ("Wrong format");
                 return false;
             }
