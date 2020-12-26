@@ -76,6 +76,12 @@ typedef enum {
     BOOT_SAVE = 2
 } bootRelayStatus_t;
 
+typedef enum {
+    TURN_OFF = 0,
+    TURN_ON = 1,
+    TOGGLE = 2
+} relayAction_t;
+
 typedef struct {
 	bootRelayStatus_t bootStatus;
 	uint period;

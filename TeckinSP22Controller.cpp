@@ -26,6 +26,7 @@ const char* toggleKey = "toggle";
 const char* buttonKey = "button";
 const char* linkKey = "link";
 const char* bootStateKey = "bstate";
+const char* scheduleKey = "sched";
 
 #if HLW8012
 void ICACHE_RAM_ATTR hlw8012_cf1_interrupt () {
@@ -100,7 +101,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 
 	if (command == nodeMessageType_t::DOWNSTREAM_DATA_GET) {
 		if (!strcmp (doc[commandKey], relayKey)) {
-			DEBUG_WARN ("Request relay status. Relay = %s", relayStatus == RELAY_ON ? "ON" : "OFF");
+			DEBUG_WARN ("Request relay status. Relay = %s", relays->get(0)? "ON" : "OFF");
 			if (!sendRelayStatus ()) {
 				DEBUG_WARN ("Error sending relay status");
 				return false;
@@ -162,7 +163,68 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			}
 
 
-		} /*else if (!strcmp (doc[commandKey], linkKey)) {
+        } else if (!strcmp (doc[commandKey], scheduleKey)){
+            /****
+            {
+                "cmd":"sched",
+                "hour":12,
+                "min":0,
+                "action":1,
+                "idx":0,
+                ---- optional
+                "mask":127,
+                "rep":true,
+                "enable":true
+            }
+            *****/
+            schedule_t sched_entry;
+            
+            if (!doc.containsKey ("hour") || !doc.containsKey ("min") || !doc.containsKey ("action") || !doc.containsKey ("index")) {
+                DEBUG_WARN ("Wrong format");
+                return false;
+            }
+            
+            sched_entry.action = doc["action"].as<int> ();
+            if (sched_entry.action < TURN_OFF || sched_entry.action > TOGGLE) {
+                DEBUG_WARN ("Wrong format");
+                return false;
+            }
+            
+            sched_entry.index = doc["idx"].as<int> ();
+            if (sched_entry.index < 0 || sched_entry.index >= NUM_RELAYS) {
+                DEBUG_WARN ("Wrong format");
+                return false;
+            }
+            
+            sched_entry.hour = doc["hour"].as<int> ();
+            sched_entry.minute = doc["min"].as<int> ();
+            if (sched_entry.hour >= 23 || sched_entry.hour >= 59) {
+                DEBUG_WARN ("Wrong format");
+                return false;
+            }
+            
+            if (doc.containsKey ("mask")) {
+                sched_entry.weekMask = doc["mask"].as<int>();
+            }
+            
+            if (doc.containsKey ("rep")) {
+                sched_entry.repeat = doc["rep"].as<int> ();
+            }
+            
+            if (doc.containsKey ("enable")) {
+                sched_entry.enabled = doc["enable"].as<int> ();
+            }
+
+            DEBUG_WARN ("Set schedule Time = %u:%u (%s). Mask " BYTE_TO_BINARY_PATTERN ". Action %d in relay %d. %s",
+                        sched_entry.hour, sched_entry.minute, sched_entry.repeat ? "repeat" : "single", 
+                        BYTE_TO_BINARY (sched_entry.weekMask), sched_entry.action, sched_entry.index, sched_entry.enabled?"Enabled":"Disabled");
+            
+            int result = scheduler.add (&sched_entry);
+            
+            DEBUG_WARN ("Result = %d", result);
+        }
+        
+        /*else if (!strcmp (doc[commandKey], linkKey)) {
 			if (!doc.containsKey (linkKey)) {
 				DEBUG_WARN ("Wrong format");
 				return false;
