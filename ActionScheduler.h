@@ -5,7 +5,7 @@
 #include <sys/time.h>
 
 #ifndef SCHED_MAX_ENTRIES
-#define SCHED_MAX_ENTRIES 10
+#define SCHED_MAX_ENTRIES 6
 #endif
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
