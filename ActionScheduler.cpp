@@ -18,11 +18,11 @@ int8_t ActionScheduler::add (schedule_t* entry) {
         //memcpy (&(entries[index]), entry, sizeof(schedule_t));
         entries[index] = *entry;
         entries[index].used = true;
-        entries[index].executed = checkFutureEvent (&(entries[index])) == past;
-        Serial.printf ("Added\n");
-    } else {
+        entries[index].executed = false; // checkFutureEvent (&(entries[index])) == past;
+        //Serial.printf ("Added\n");
+    } /*else {
         Serial.println ("List full");
-    }
+    }*/
     
     return index;
 }
@@ -112,7 +112,7 @@ void ActionScheduler::loop () {
             }
             if (entries[i].enabled && entries[i].repeat &&
                 (splitTime->tm_hour != entries[i].hour ||
-                splitTime->tm_min != entries[i].minute) && !today) {
+                splitTime->tm_min != entries[i].minute) /*&& !today*/) {
                     entries[i].executed = false;
             }
         }
@@ -121,9 +121,15 @@ void ActionScheduler::loop () {
 }
 
 bool ActionScheduler::checkWeekDay (uint8_t weekMask, int weekDay) {
-    if ((weekMask & 0b01111111) == 0 || weekDay < 0 || weekDay > 6) {
+    //Serial.printf ("checkWeekDay: weekMask " BYTE_TO_BINARY_PATTERN " weekDay %d\n",
+    //               BYTE_TO_BINARY (weekMask), weekDay);
+    if (/*(weekMask & 0b01111111) == 0 || */weekDay < 0 || weekDay > 6) {
         return false;
     }
+    if ((weekMask == 0) || (weekMask >= 127)){
+        return true;
+    }
+    
     int today = 1 << weekDay;
     
     bool result = (weekMask & today) != 0;
@@ -147,7 +153,7 @@ schedError_t ActionScheduler::checkEntry (schedule_t* entry) {
 
 int ActionScheduler::checkFutureEvent (schedule_t* entry) {
     time_t currenttime = time (NULL);
-    tm* splitTime = gmtime (&currenttime);
+    tm* splitTime = localtime (&currenttime);
     if (!splitTime) {
         return invalidTime;
     }
@@ -200,7 +206,20 @@ tm* ActionScheduler::setFromHourMinute (uint8_t hour, uint8_t minute, tm* splitT
 }
 
 time_t ActionScheduler::secSinceMidnight (tm* date) {
-    tm tempDate = *date;
+    tm tempDate;
+    
+    tempDate.tm_mday = 1;
+    tempDate.tm_mon = 0;
+    tempDate.tm_sec = 0;
+    tempDate.tm_year = 70;
+    tempDate.tm_hour = 0;
+    tempDate.tm_min = 0;
+    tempDate.tm_sec = 0;
+    tempDate.tm_isdst = 0;
+    time_t zeroTime = mktime (&tempDate);
+    //Serial.printf ("secSinceMidnight: ZeroTime %d\n", zeroTime);
+    
+    tempDate = *date;
     
     tempDate.tm_mday = 1;
     tempDate.tm_mon = 0;
@@ -209,7 +228,8 @@ time_t ActionScheduler::secSinceMidnight (tm* date) {
     tempDate.tm_year = 70;
         
     time_t unixtime = mktime (&tempDate);
-    return unixtime;
+    //Serial.printf ("secSinceMidnight: time %d\n", unixtime);
+    return unixtime - zeroTime;
 }
 
 char* ActionScheduler::getJsonChr (uint8_t index){
