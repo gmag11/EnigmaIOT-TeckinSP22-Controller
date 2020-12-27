@@ -68,6 +68,8 @@ public:
     
     char* getJsonChr ();
     
+    char* getJsonChr (uint8_t index);
+    
     void onEvent (onSchedEventCb_t handler){
         callback = handler;
     }

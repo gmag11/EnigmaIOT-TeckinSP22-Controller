@@ -212,6 +212,53 @@ time_t ActionScheduler::secSinceMidnight (tm* date) {
     return unixtime;
 }
 
+char* ActionScheduler::getJsonChr (uint8_t index){
+    static char output[256];
+    int remaining = sizeof (output);
+    int strIndex = 0;
+    int count;
+    
+    if (index > SCHED_MAX_ENTRIES) {
+        return NULL;
+    }
+
+    count = snprintf (output, remaining, "{");
+    strIndex += count;
+    remaining -= count;
+
+    if (remaining > 0) {
+        if (entries[index].used){
+            count = snprintf (output + strIndex, remaining, "'index':%d,'action':%d,'hour':%u,'min':%u",
+                              entries[index].index,
+                              entries[index].action,
+                              entries[index].hour,
+                              entries[index].minute);
+            strIndex += count;
+            remaining -= count;
+            if (!entries[index].enabled) {
+                count = snprintf (output + strIndex, remaining, "',enabled':%d", entries[index].enabled);
+                strIndex += count;
+                remaining -= count;
+            }
+
+            if (!entries[index].repeat) {
+                count = snprintf (output + strIndex, remaining, ",'repeat':%d", entries[index].repeat);
+                strIndex += count;
+                remaining -= count;
+            }
+
+            if (entries[index].weekMask != 0 && entries[index].weekMask != 127) {
+                count = snprintf (output + strIndex, remaining, ",'weekmask':%u", entries[index].weekMask);
+                strIndex += count;
+                remaining -= count;
+            }
+        }
+    }
+    if (remaining > 0) {
+        count = snprintf (output + strIndex, remaining, "}");
+    }
+    return output;
+}
 
 char* ActionScheduler::getJsonChr () {    
     static char output[1024];
@@ -224,41 +271,52 @@ char* ActionScheduler::getJsonChr () {
     strIndex += count;
     remaining -= count;
         
-    for (uint i = 0; i < SCHED_MAX_ENTRIES; i++){
+    for (uint8_t i = 0; i < SCHED_MAX_ENTRIES; i++){
         //Serial.printf ("Index: %u, used: %d, remaining: %d\n", i, entries[i].used, remaining);
-        if (entries[i].used && remaining > 0) {
-            count = snprintf (output + strIndex, remaining, "{'index':%d,'action':%d,'hour':%u,'min':%u",
-                              entries[i].index,
-                              entries[i].action,
-                              entries[i].hour,
-                              entries[i].minute);
+        if (remaining > 0) {
+            char* element = getJsonChr (i);
+            //strncpy (output + strIndex, element, remaining);
+            count = snprintf (output + strIndex, remaining, "%s", element);
             strIndex += count;
             remaining -= count;
-            
-            if (!entries[i].enabled) {
-                count = snprintf (output + strIndex, remaining, "',enabled':%d", entries[i].enabled);
-                strIndex += count;
-                remaining -= count;
-            }
+            // count = snprintf (output + strIndex, remaining, "{");
+            // strIndex += count;
+            // remaining -= count;
 
-            if (!entries[i].repeat) {
-                count = snprintf (output + strIndex, remaining, "','repeat':%d", entries[i].repeat);
-                strIndex += count;
-                remaining -= count;
-            }
+            // if (entries[i].used) {
+            //     count = snprintf (output + strIndex, remaining, "'index':%d,'action':%d,'hour':%u,'min':%u",
+            //                       entries[i].index,
+            //                       entries[i].action,
+            //                       entries[i].hour,
+            //                       entries[i].minute);
+            //     strIndex += count;
+            //     remaining -= count;
 
-            if (entries[i].weekMask != 0 && entries[i].weekMask != 127) {
-                count = snprintf (output + strIndex, remaining, ",'weekmask':%u", entries[i].weekMask);
-                strIndex += count;
-                remaining -= count;
-            }
+            //     if (!entries[i].enabled) {
+            //         count = snprintf (output + strIndex, remaining, "',enabled':%d", entries[i].enabled);
+            //         strIndex += count;
+            //         remaining -= count;
+            //     }
+
+            //     if (!entries[i].repeat) {
+            //         count = snprintf (output + strIndex, remaining, ",'repeat':%d", entries[i].repeat);
+            //         strIndex += count;
+            //         remaining -= count;
+            //     }
+
+            //     if (entries[i].weekMask != 0 && entries[i].weekMask != 127) {
+            //         count = snprintf (output + strIndex, remaining, ",'weekmask':%u", entries[i].weekMask);
+            //         strIndex += count;
+            //         remaining -= count;
+            //     }            
+            // }
             
-            count = snprintf (output + strIndex, remaining, "}");
-            strIndex += count;
-            remaining -= count;
+            // count = snprintf (output + strIndex, remaining, "}");
+            // strIndex += count;
+            // remaining -= count;
 
         }
-        if (i < SCHED_MAX_ENTRIES - 1 && entries[i + 1].used && remaining > 0) {
+        if (i < SCHED_MAX_ENTRIES - 1 /*&& entries[i + 1].used*/ && remaining > 0) {
             count = snprintf (output + strIndex, remaining, ",");
             strIndex += count;
             remaining -= count;
