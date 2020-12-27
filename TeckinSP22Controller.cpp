@@ -27,6 +27,7 @@ const char* buttonKey = "button";
 const char* linkKey = "link";
 const char* bootStateKey = "bstate";
 const char* scheduleKey = "sched";
+const char* elemKey = "elem";
 
 #if HLW8012
 void ICACHE_RAM_ATTR hlw8012_cf1_interrupt () {
@@ -108,7 +109,20 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			}
         } else if (!strcmp (doc[commandKey], scheduleKey)) {
             DEBUG_WARN ("Request schedule list");
-            char* schedStr = scheduler.getJsonChr ();
+            int index = -1;
+            if (doc.containsKey (elemKey)) {
+                index = doc[elemKey].as<int> ();
+            }
+            char* schedStr = NULL;;
+            if (index < 0) {
+                schedStr = scheduler.getJsonChr ();
+            } else if (index < SCHED_MAX_ENTRIES) {
+                schedStr = scheduler.getJsonChr (index);
+            }
+            if (!schedStr){
+                DEBUG_WARN ("Error in schedule list");
+                return false;
+            }
             if (!sendSchedulerList (schedStr)) {
                 DEBUG_WARN ("Error sending schedule list");
                 return false;
@@ -467,6 +481,28 @@ bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
     }
 
 	return sendJson (json);
+}
+
+bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
+    DEBUG_DBG ("Schedule list\n%s", list);
+    
+    DynamicJsonDocument json (1024);
+    
+    json["cmd"] = scheduleKey;
+    
+    DynamicJsonDocument schedListArray (1024);
+    
+    DeserializationError result = deserializeJson (schedListArray, list);
+    
+    json["list"] = schedListArray;
+    
+    if (result != DeserializationError::Ok) {
+        DEBUG_WARN ("JSON string deserialization error %s", result.c_str ());
+        return false;
+    }
+    
+    return sendJson (json);
+    
 }
 
 void CONTROLLER_CLASS_NAME::connectInform () {
