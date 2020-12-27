@@ -2,17 +2,17 @@
 
 int8_t ActionScheduler::add (schedule_t* entry) {
     int8_t index = searchNextFree ();
-    Serial.printf ("Index = %d\n", index);
+    //Serial.printf ("Index = %d\n", index);
     
     schedError_t result = checkEntry (entry);
-    Serial.printf ("Entry is%s valid\n", result == correct ? "" : " not");
+    //Serial.printf ("Entry is%s valid\n", result == correct ? "" : " not");
     
     if (result) {
-        Serial.printf ("Error %d\n", result);
+        //Serial.printf ("Error %d\n", result);
         return result;
     }
     
-    Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
+    //Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
 
     if (index >= 0) {
         //memcpy (&(entries[index]), entry, sizeof(schedule_t));
@@ -67,9 +67,9 @@ schedule_t* ActionScheduler::get (uint8_t index){
 }
 
 int8_t ActionScheduler::searchNextFree () {
-    Serial.printf ("SCHED_MAX_ENTRIES = %d\n", SCHED_MAX_ENTRIES);
+    //Serial.printf ("SCHED_MAX_ENTRIES = %d\n", SCHED_MAX_ENTRIES);
     for (int8_t i = 0; i < SCHED_MAX_ENTRIES; i++){
-        Serial.printf ("Entry %d is %s\n", i, entries[i].used? "used":"free");
+        //Serial.printf ("Entry %d is %s\n", i, entries[i].used? "used":"free");
         if (!entries[i].used){
             return i;
         }
@@ -153,7 +153,7 @@ int ActionScheduler::checkFutureEvent (schedule_t* entry) {
     }
 
     time_t currentSecSinceMidnight = secSinceMidnight (splitTime);
-    Serial.printf ("Current time today: %ld\n", currentSecSinceMidnight);
+    //Serial.printf ("Current time today: %ld\n", currentSecSinceMidnight);
     
     if (!setFromHourMinute(entry->hour,entry->minute,splitTime)){
         return invalidTime;
@@ -164,22 +164,22 @@ int ActionScheduler::checkFutureEvent (schedule_t* entry) {
         entry->weekMask = 0b01111111;
     }
     
-    Serial.printf ("Weekday %d WeekMask " BYTE_TO_BINARY_PATTERN " Today: " BYTE_TO_BINARY_PATTERN "\n", splitTime->tm_wday, BYTE_TO_BINARY (entry->weekMask), BYTE_TO_BINARY (1 << splitTime->tm_wday));
+    //Serial.printf ("Weekday %d WeekMask " BYTE_TO_BINARY_PATTERN " Today: " BYTE_TO_BINARY_PATTERN "\n", splitTime->tm_wday, BYTE_TO_BINARY (entry->weekMask), BYTE_TO_BINARY (1 << splitTime->tm_wday));
     if (!(entry->weekMask & (1 << splitTime->tm_wday))) {
-        Serial.print ("Not today\nFuture\n");
+        //Serial.print ("Not today\nFuture\n");
         return future;
-    } else {
+    } /*else {
         Serial.print ("Today\n");
-    }
+    }*/
     
     time_t entrySecSinceMidnight = secSinceMidnight (splitTime);
-    Serial.printf ("Alarm time today: %ld\n", entrySecSinceMidnight);
+    //Serial.printf ("Alarm time today: %ld\n", entrySecSinceMidnight);
 
     if (entrySecSinceMidnight >= currentSecSinceMidnight) {
-        Serial.println ("Future");
+        //Serial.println ("Future");
         return future;
     } else {
-        Serial.println ("Past");
+        //Serial.println ("Past");
         return past;
     }
 }
