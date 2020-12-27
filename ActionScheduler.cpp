@@ -15,7 +15,6 @@ int8_t ActionScheduler::add (schedule_t* entry) {
     //Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
 
     if (index >= 0) {
-        //memcpy (&(entries[index]), entry, sizeof(schedule_t));
         entries[index] = *entry;
         entries[index].used = true;
         entries[index].executed = false; // checkFutureEvent (&(entries[index])) == past;
@@ -52,8 +51,10 @@ int8_t ActionScheduler::replace (uint8_t index, schedule_t* entry) {
     }
 
     if (index < SCHED_MAX_ENTRIES) {
-        memccpy (&(entries[index]), entry, 1, sizeof (schedule_t));
+        entries[index] = *entry;
         entries[index].used = true;
+        entries[index].executed = false; // checkFutureEvent (&(entries[index])) == past;
+        
         return index;
     }
     return indexOutOfBounds;

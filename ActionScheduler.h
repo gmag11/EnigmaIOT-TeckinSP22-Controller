@@ -26,7 +26,8 @@ typedef enum {
     noFreeSlot = -1,
     invalidTime = -2,
     invalidWeekMask = -3,
-    indexOutOfBounds = -4
+    indexOutOfBounds = -4,
+    unidentifiedError = -127
 } schedError_t;
 
 typedef struct {
