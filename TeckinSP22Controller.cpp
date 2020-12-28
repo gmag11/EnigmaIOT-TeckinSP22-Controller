@@ -219,7 +219,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             
             sched_entry.hour = doc["hour"].as<int> ();
             sched_entry.minute = doc["min"].as<int> ();
-            if (sched_entry.hour >= 23 || sched_entry.hour >= 59) {
+            if (sched_entry.hour > 23 || sched_entry.hour > 59) {
                 DEBUG_WARN ("Wrong format");
                 return false;
             }
