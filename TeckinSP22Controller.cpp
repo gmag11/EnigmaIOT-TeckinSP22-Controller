@@ -10,6 +10,7 @@ using namespace std;
 using namespace placeholders;
 
 constexpr auto CONFIG_FILE = "/customconf.json"; ///< @brief Custom configuration file name
+constexpr auto SCHED_FILE = "/schedule.json"; ///< @brief Custom schedule configuration file name
 
 // -----------------------------------------
 // You may add some global variables you need here,
@@ -27,7 +28,9 @@ const char* buttonKey = "button";
 const char* linkKey = "link";
 const char* bootStateKey = "bstate";
 const char* scheduleKey = "sched";
-const char* elemKey = "elem";
+const char* scheduleAddKey = "schedadd";
+const char* scheduleDelKey = "scheddel";
+const char* elemKey = "entry";
 
 #if HLW8012
 void ICACHE_RAM_ATTR hlw8012_cf1_interrupt () {
@@ -190,7 +193,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			}
 
 
-        } else if (!strcmp (doc[commandKey], scheduleKey)){
+        } else if (!strcmp (doc[commandKey], scheduleAddKey)){
             /****
             {
                 "cmd":"sched",
@@ -246,9 +249,45 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                         sched_entry.hour, sched_entry.minute, sched_entry.repeat ? "repeat" : "single", 
                         BYTE_TO_BINARY (sched_entry.weekMask), sched_entry.action, sched_entry.index, sched_entry.enabled?"Enabled":"Disabled");
             
-            int result = scheduler.add (&sched_entry);
+            int result = unidentifiedError;
             
+            if (doc.containsKey (elemKey)) {
+                int entry = -1;
+                entry = doc[elemKey].as<int> ();
+                if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
+                    DEBUG_WARN ("Entry replaced");
+                    result = scheduler.replace (entry, &sched_entry);
+                } else { 
+                    DEBUG_WARN ("Wrong entry value");
+                    return false;
+                }
+            } else {
+                result = scheduler.add (&sched_entry);
+            }
             DEBUG_WARN ("Result = %d", result);
+            if (result >= 0){
+                return saveSchedule ();
+            }
+        } else if (!strcmp (doc[commandKey], scheduleDelKey)) {
+            DEBUG_WARN ("Remove Schedule request");
+            if (!doc.containsKey (elemKey)) {
+                DEBUG_WARN ("Wrong format");
+                return false;
+            }
+            int entry = -1;
+            int result = unidentifiedError;
+            entry = doc[elemKey].as<int> ();
+            if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
+                DEBUG_WARN ("Entry replaced");
+                result = scheduler.remove (entry);
+            } else {
+                DEBUG_WARN ("Wrong entry value");
+                return false;
+            }
+            DEBUG_WARN ("Result = %d", result);
+            if (result >= 0) {
+                return saveSchedule ();
+            }
         }
         
         /*else if (!strcmp (doc[commandKey], linkKey)) {
@@ -460,15 +499,54 @@ void CONTROLLER_CLASS_NAME::configManagerExit (bool status) {
 
 bool CONTROLLER_CLASS_NAME::loadConfig () {
 	// If you need to read custom configuration data do it here
-	return true;
+    bool result = true;
+    if (!loadSchedule ()) {
+        result = false;
+    }
+    return result;
+
+}
+
+bool CONTROLLER_CLASS_NAME::loadSchedule () {
+    File sched;
+
+    if (!FILESYSTEM.exists (SCHED_FILE)) {
+        sched = FILESYSTEM.open (SCHED_FILE, "w");
+        if (sched) {
+            return scheduler.save (sched);
+        } else {
+            return false;
+        }
+    }
+    sched = FILESYSTEM.open (SCHED_FILE, "r");
+    if (sched) {
+        return scheduler.load (sched);
+    } else {
+        return false;
+    }
+
+}
+
 }
 
 bool CONTROLLER_CLASS_NAME::saveConfig () {
 	// If you need to save custom configuration data do it here
 	// Save measure period 3-X, initial_status, last_relay_status
-	return true;
+    bool result = true;
+    if (!saveSchedule ()){
+        result = false;
+    }
+    return result;
 }
 
+bool CONTROLLER_CLASS_NAME::saveSchedule() {
+    File sched = FILESYSTEM.open (SCHED_FILE, "w");
+    if (sched) {
+        return scheduler.save (sched);
+    } else {
+        return false;
+    }
+}
 bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
 	const size_t capacity = JSON_OBJECT_SIZE (2);
 	DynamicJsonDocument json (capacity);
@@ -488,7 +566,7 @@ bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
     
     DynamicJsonDocument json (1024);
     
-    json["cmd"] = scheduleKey;
+    json["cmd"] = scheduleAddKey;
     
     DynamicJsonDocument schedListArray (1024);
     

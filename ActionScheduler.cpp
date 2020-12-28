@@ -35,27 +35,35 @@ char* ActionScheduler::entry2str (schedule_t* entry) {
     return output;
 }
 
-bool ActionScheduler::remove (uint8_t index) {
+int8_t ActionScheduler::remove (uint8_t index) {
     if (index < SCHED_MAX_ENTRIES) {
         entries[index].used = false;
-        return true;
+        return index;
     }
-    return false;
+    return indexOutOfBounds;
 }
 
 int8_t ActionScheduler::replace (uint8_t index, schedule_t* entry) {
     schedError_t result = checkEntry (entry);
+    Serial.printf ("Index = %d\n", index);
+    Serial.printf ("Entry is%s valid\n", result == correct ? "" : " not");
 
-    if (!result) {
+    if (result) {
+        Serial.printf ("Error %d\n", result);
         return result;
     }
+    
+    Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
 
     if (index < SCHED_MAX_ENTRIES) {
-        entries[index] = *entry;
+        memcpy (&(entries[index]), entry, sizeof (schedule_t));
+        //entries[index] = *entry;
         entries[index].used = true;
         entries[index].executed = false; // checkFutureEvent (&(entries[index])) == past;
-        
+        Serial.printf ("Replaced\n");
         return index;
+    } else {
+        Serial.println ("Replace index error");
     }
     return indexOutOfBounds;
 }
@@ -356,4 +364,31 @@ bool ActionScheduler::enable (uint8_t index, bool enableFlag) {
         return true;
     }
     return false;
+}
+
+bool ActionScheduler::save (File file){
+    if(!file){
+        return false;
+    }
+    size_t size = file.write ((uint8_t*)entries, sizeof (entries));
+    file.flush ();
+    file.close ();
+    if (size == sizeof (entries)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool ActionScheduler::load (File file){
+    if (!file) {
+        return false;
+    }
+    if (file.size () != sizeof (entries)) {
+        return false;
+    }
+    file.read ((uint8_t*)entries, sizeof (entries));
+    file.close ();
+
+    return true;
 }

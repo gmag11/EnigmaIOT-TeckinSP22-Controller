@@ -61,8 +61,8 @@ constexpr auto HLW_SEL = 12;
 #define HLW8012_INTERRUPT_ON        FALLING
 #endif // HLW8012
 
-#define RELAY_ON HIGH
-#define RELAY_OFF !RELAY_ON
+#define RELAY_ON_POLARITY LOW // HIGH
+//#define RELAY_OFF !RELAY_ON_POLARITY
 #define NUM_RELAYS 1
 
 #define LED_ON LOW
@@ -70,11 +70,11 @@ constexpr auto HLW_SEL = 12;
 
 #define RELAY_LED RED_LED_INV
 
-typedef enum {
-	BOOT_OFF = 0,
-    BOOT_ON = 1,
-    BOOT_SAVE = 2
-} bootRelayStatus_t;
+// typedef enum {
+// 	BOOT_OFF = 0,
+//     BOOT_ON = 1,
+//     BOOT_SAVE = 2
+// } bootRelayStatus_t;
 
 typedef enum {
     TURN_OFF = 0,
@@ -93,6 +93,7 @@ protected:
 	// --------------------------------------------------
 	// add all parameters that your project needs here
 	// --------------------------------------------------
+
 
 public:
 	void setup (EnigmaIOTNodeClass* node, void* data = NULL);
@@ -151,16 +152,19 @@ protected:
 	// ------------------------------------------------------------
 	// You may add additional method definitions that you need here
 	// ------------------------------------------------------------
-	relayConfig_t relayConfig;
-	bool doCalibration = false;
+	//relayConfig_t relayConfig;
 	DebounceEvent* button;
 	bool restartTriggd = false;
 	//bool relayStatus;
-	double lastEnergy;
     RelaySet *relays;
     ActionScheduler scheduler;
+    AsyncWiFiManagerParameter* bootStatusParam;
+    AsyncWiFiManagerParameter* bootStatusListParam;
 
 #if HLW8012
+    bool doCalibration = false;
+    double lastEnergy;
+
 	void setInterrupts ();
 
 	void calibrate ();
@@ -179,6 +183,10 @@ protected:
     bool sendSchedulerList (char* list);
 
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
+    
+    bool saveSchedule ();
+    
+    bool loadSchedule ();
 
 };
 

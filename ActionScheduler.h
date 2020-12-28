@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <sys/time.h>
+#include <FS.h>
 
 #ifndef SCHED_MAX_ENTRIES
 #define SCHED_MAX_ENTRIES 6
@@ -57,7 +58,7 @@ class ActionScheduler {
 public:
     int8_t add (schedule_t* entry);
     
-    bool remove (uint8_t index);
+    int8_t remove (uint8_t index);
     
     bool enable (uint8_t index, bool enableFlag);
     
@@ -74,6 +75,10 @@ public:
     void onEvent (onSchedEventCb_t handler){
         callback = handler;
     }
+    
+    bool save (File file);
+    
+    bool load (File file);
     
 protected:
     
