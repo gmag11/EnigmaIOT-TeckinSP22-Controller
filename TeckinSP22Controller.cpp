@@ -131,23 +131,15 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                 return false;
             }
 
-        }
-        /*else if (!strcmp (doc[commandKey], linkKey)) {
-			DEBUG_WARN ("Request link status. Link = %s", config.linked ? "enabled" : "disabled");
-			if (!sendLinkStatus ()) {
-				DEBUG_WARN ("Error sending link status");
-				return false;
-			}
-
-		}*/ /*else if (!strcmp (doc[commandKey], bootStateKey)) {
+        } else if (!strcmp (doc[commandKey], bootStateKey)) {
 			DEBUG_WARN ("Request boot status configuration. Boot = %d",
-						config.bootStatus);
+                        relays->getBootStatus());
 			if (!sendBootStatus ()) {
 				DEBUG_WARN ("Error sending boot status configuration");
 				return false;
 			}
 
-		}*/
+		}
 	}
 
 	if (command == nodeMessageType_t::DOWNSTREAM_DATA_SET) {
@@ -288,37 +280,32 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             if (result >= 0) {
                 return saveSchedule ();
             }
-        }
-        
-        /*else if (!strcmp (doc[commandKey], linkKey)) {
-			if (!doc.containsKey (linkKey)) {
-				DEBUG_WARN ("Wrong format");
-				return false;
-			}
-			DEBUG_WARN ("Set link status. Link = %s", doc[linkKey].as<bool> () ? "enabled" : "disabled");
-
-			setLinked (doc[linkKey].as<bool> ());
-
-			if (!sendLinkStatus ()) {
-				DEBUG_WARN ("Error sending link status");
-				return false;
-			}
-
-		}*//* else if (!strcmp (doc[commandKey], bootStateKey)) {
+        } else if (!strcmp (doc[commandKey], bootStateKey)) {
 			if (!doc.containsKey (bootStateKey)) {
 				DEBUG_WARN ("Wrong format");
 				return false;
 			}
-			DEBUG_WARN ("Set boot status. Link = %d", doc[bootStateKey].as<int> ());
-
-			setBoot (doc[bootStateKey].as<int> ());
+			DEBUG_WARN ("Set boot status = %d", doc[bootStateKey].as<int> ());
+            bootRelayStatus_t newBootStatus;
+            switch (doc[bootStateKey].as<int> ()){
+                case 1:
+                    newBootStatus = BOOT_ON;
+                    break;
+                case 2:
+                    newBootStatus = SAVE_RELAY_STATUS;
+                    break;
+                default:
+                    newBootStatus = BOOT_OFF;
+                    break;
+            }
+            relays->setBootStatus (newBootStatus);
 
 			if (!sendBootStatus ()) {
 				DEBUG_WARN ("Error sending boot status configuration");
 				return false;
 			}
 
-		}*/
+		}
 	}
 
 	return true;
@@ -329,16 +316,6 @@ bool CONTROLLER_CLASS_NAME::sendCommandResp (const char* command, bool result) {
 	// Respond to command with a result: true if successful, false if failed 
 	return true;
 }
-
-// bool CONTROLLER_CLASS_NAME::sendStartAnouncement () {
-// 	// You can send a 'hello' message when your node starts. Useful to detect unexpected reboot
-// 	const size_t capacity = JSON_OBJECT_SIZE (2);
-// 	DynamicJsonDocument json (capacity);
-// 	json["status"] = "start";
-// 	json["device"] = "Teckin SP22 v1.4";
-
-// 	return sendJson (json);
-// }
 
 void CONTROLLER_CLASS_NAME::sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
 	const size_t capacity = JSON_OBJECT_SIZE (5);
@@ -383,9 +360,9 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	pinMode (BLUE_LED_INV, OUTPUT);
 	digitalWrite (BLUE_LED_INV, HIGH);
 	//pinMode (RELAY, OUTPUT);
-    uint8_t relayPins[] = { RELAY };
-    uint8_t relayOnStates[] = { RELAY_ON };
-    relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
+    // uint8_t relayPins[] = { RELAY };
+    // uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
+    // relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
 
     scheduler.onEvent (std::bind (&CONTROLLER_CLASS_NAME::onSchedulerEvent, this, _1));
 
@@ -403,6 +380,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
     //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
+    relays->begin ();
 
 	if (!sendRelayStatus ()) {
 		DEBUG_WARN ("Error sending relay status");
@@ -488,21 +466,56 @@ CONTROLLER_CLASS_NAME::~CONTROLLER_CLASS_NAME () {
 }
 
 void CONTROLLER_CLASS_NAME::configManagerStart () {
-	DEBUG_INFO ("==== CCost Controller Configuration start ====");
-	// If you need to add custom configuration parameters do it here
+    DEBUG_WARN ("==== CCost Controller Configuration start ====");
+    // If you need to add custom configuration parameters do it here
+
+    bootStatusParam = new AsyncWiFiManagerParameter ("bootStatus", "Boot Relay Status", "", 6, "required type=\"text\" list=\"bootStatusList\" pattern=\"^ON$|^OFF$|^SAVE$\"");
+    bootStatusListParam = new AsyncWiFiManagerParameter ("<datalist id=\"bootStatusList\">" \
+                                                         "<option value = \"OFF\" >" \
+                                                         "<option value = \"ON\">" \
+                                                         "<option value = \"SAVE\">" \
+                                                         "</datalist>");
+
+    EnigmaIOTNode.addWiFiManagerParameter (bootStatusListParam);
+    EnigmaIOTNode.addWiFiManagerParameter (bootStatusParam);
 }
 
 void CONTROLLER_CLASS_NAME::configManagerExit (bool status) {
-	DEBUG_INFO ("==== CCost Controller Configuration result ====");
-	// You can read configuration paramenter values here
+    DEBUG_WARN ("==== CCost Controller Configuration result ====");
+    // You can read configuration paramenter values here
+    DEBUG_WARN ("Boot Relay Status: %s", bootStatusParam->getValue ());
+
+    // TODO: Finish bootStatusParam analysis
+
+    if (status) {
+        if (!strncmp (bootStatusParam->getValue (), "ON", 6)) {
+            relays->setBootStatus (bootRelayStatus_t::BOOT_ON);
+        } else if (!strncmp (bootStatusParam->getValue (), "SAVE", 6)) {
+            relays->setBootStatus (bootRelayStatus_t::SAVE_RELAY_STATUS);
+        } else {
+            relays->setBootStatus (bootRelayStatus_t::BOOT_OFF);
+        }
+
+        if (!saveConfig ()) {
+            DEBUG_ERROR ("Error writting blind controller config to filesystem.");
+        } else {
+            DEBUG_WARN ("Configuration stored");
+        }
+    } else {
+        DEBUG_WARN ("Configuration does not need to be saved");
+    }
 }
 
 bool CONTROLLER_CLASS_NAME::loadConfig () {
 	// If you need to read custom configuration data do it here
     bool result = true;
+    if (!relays->load ()) {
+        result = false;
+    }
     if (!loadSchedule ()) {
         result = false;
     }
+    DEBUG_WARN ("Configuration loaded. Result: %d", result);
     return result;
 
 }
@@ -527,12 +540,13 @@ bool CONTROLLER_CLASS_NAME::loadSchedule () {
 
 }
 
-}
-
 bool CONTROLLER_CLASS_NAME::saveConfig () {
 	// If you need to save custom configuration data do it here
 	// Save measure period 3-X, initial_status, last_relay_status
     bool result = true;
+    if (!relays->save ()) {
+        result = false;
+    }
     if (!saveSchedule ()){
         result = false;
     }
@@ -547,6 +561,7 @@ bool CONTROLLER_CLASS_NAME::saveSchedule() {
         return false;
     }
 }
+
 bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
 	const size_t capacity = JSON_OBJECT_SIZE (2);
 	DynamicJsonDocument json (capacity);
@@ -581,6 +596,17 @@ bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
     
     return sendJson (json);
     
+}
+
+bool CONTROLLER_CLASS_NAME::sendBootStatus () {
+    const size_t capacity = JSON_OBJECT_SIZE (2);
+    DynamicJsonDocument json (capacity);
+
+    json[commandKey] = bootStateKey;
+    int bootStatus = relays->getBootStatus ();
+    json[bootStateKey] = bootStatus;
+
+    return sendJson (json);
 }
 
 void CONTROLLER_CLASS_NAME::connectInform () {

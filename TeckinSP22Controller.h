@@ -82,11 +82,11 @@ typedef enum {
     TOGGLE = 2
 } relayAction_t;
 
-typedef struct {
+/*typedef struct {
 	bootRelayStatus_t bootStatus;
 	uint period;
 	bool lastRelayStatus;
-} relayConfig_t;
+} relayConfig_t;*/
 
 class CONTROLLER_CLASS_NAME : EnigmaIOTjsonController {
 protected:
@@ -103,6 +103,12 @@ public:
 	void loop ();
 	
 	~CONTROLLER_CLASS_NAME ();
+    
+    CONTROLLER_CLASS_NAME () {
+        uint8_t relayPins[] = { RELAY };
+        uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
+        relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS, &FILESYSTEM);
+    }
 
 	/**
 	 * @brief Called when wifi manager starts config portal
@@ -184,10 +190,12 @@ protected:
 
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
     
+    bool sendBootStatus ();
+    
     bool saveSchedule ();
     
     bool loadSchedule ();
-
+    
 };
 
 #endif
