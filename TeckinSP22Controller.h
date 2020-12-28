@@ -9,13 +9,13 @@
 	#include "WProgram.h"
 #endif
 
-#ifndef HLW8012
-#define HLW8012 1
-#endif //HLW8012
+#ifndef ENABLE_HLW8012
+#define ENABLE_HLW8012  1
+#endif //ENABLE_HLW8012
 
-#if HLW8012
+#if ENABLE_HLW8012
 #include <HLW8012.h>
-#endif // HLW8012
+#endif // ENABLE_HLW8012
 #include <DebounceEvent.h>
 #include "RelaySet.h"
 #include "ActionScheduler.h"
@@ -43,7 +43,7 @@ constexpr auto BLUE_LED_INV = 13;
 #ifndef RELAY
 constexpr auto RELAY = 14;
 #endif
-#if HLW8012
+#if ENABLE_HLW8012
 constexpr auto HLW_CF = 4;
 constexpr auto HLW_CF1 = 5;
 constexpr auto HLW_SEL = 12;
@@ -59,9 +59,9 @@ constexpr auto HLW_SEL = 12;
 #define HLW8012_VOLTAGE_RATIO       281105 //264935
 #define HLW8012_POWER_RATIO         3304057 //2533110
 #define HLW8012_INTERRUPT_ON        FALLING
-#endif // HLW8012
+#endif // ENABLE_HLW8012
 
-#define RELAY_ON_POLARITY LOW // HIGH
+#define RELAY_ON_POLARITY HIGH
 //#define RELAY_OFF !RELAY_ON_POLARITY
 #define NUM_RELAYS 1
 
@@ -168,7 +168,7 @@ protected:
     AsyncWiFiManagerParameter* bootStatusParam;
     AsyncWiFiManagerParameter* bootStatusListParam;
 
-#if HLW8012
+#if ENABLE_HLW8012
     bool doCalibration = false;
     double lastEnergy;
 
@@ -177,7 +177,7 @@ protected:
 	void calibrate ();
 
     void sendHLWmeasurement ();
-#endif // HLW8012
+#endif // ENABLE_HLW8012
     
 	void buttonCb (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
 
