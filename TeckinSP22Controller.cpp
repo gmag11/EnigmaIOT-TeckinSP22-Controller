@@ -562,13 +562,13 @@ bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
     
     DynamicJsonDocument json (1024);
     
-    json["cmd"] = scheduleAddKey;
+    json["cmd"] = scheduleKey;
     
     DynamicJsonDocument schedListArray (1024);
     
     DeserializationError result = deserializeJson (schedListArray, list);
     
-    json["list"] = schedListArray;
+    json[scheduleKey] = schedListArray;
     
     if (result != DeserializationError::Ok) {
         DEBUG_WARN ("JSON string deserialization error %s", result.c_str ());
