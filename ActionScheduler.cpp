@@ -45,25 +45,25 @@ int8_t ActionScheduler::remove (uint8_t index) {
 
 int8_t ActionScheduler::replace (uint8_t index, schedule_t* entry) {
     schedError_t result = checkEntry (entry);
-    Serial.printf ("Index = %d\n", index);
-    Serial.printf ("Entry is%s valid\n", result == correct ? "" : " not");
+    //Serial.printf ("Index = %d\n", index);
+    //Serial.printf ("Entry is%s valid\n", result == correct ? "" : " not");
 
     if (result) {
-        Serial.printf ("Error %d\n", result);
+        //Serial.printf ("Error %d\n", result);
         return result;
     }
     
-    Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
+    //Serial.printf ("Entry: -----\n %s\n", entry2str (entry));
 
     if (index < SCHED_MAX_ENTRIES) {
         memcpy (&(entries[index]), entry, sizeof (schedule_t));
         //entries[index] = *entry;
         entries[index].used = true;
         entries[index].executed = false; // checkFutureEvent (&(entries[index])) == past;
-        Serial.printf ("Replaced\n");
+        //Serial.printf ("Replaced\n");
         return index;
     } else {
-        Serial.println ("Replace index error");
+        //Serial.println ("Replace index error");
     }
     return indexOutOfBounds;
 }

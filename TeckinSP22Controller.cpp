@@ -88,13 +88,13 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 		return false;
 	}
 
-	DEBUG_WARN ("Command: %d = %s", command, command == nodeMessageType_t::DOWNSTREAM_DATA_GET ? "GET" : "SET");
+	DEBUG_INFO ("Command: %d = %s", command, command == nodeMessageType_t::DOWNSTREAM_DATA_GET ? "GET" : "SET");
 
 	// Dump debug data
 	size_t strLen = measureJson (doc) + 1;
 	char* strBuffer = (char*)malloc (strLen);
 	serializeJson (doc, strBuffer, strLen);
-	DEBUG_WARN ("Data: %s", strBuffer);
+	DEBUG_DBG ("Data: %s", strBuffer);
 	free (strBuffer);
 
 	// Check cmd field on JSON data
@@ -105,13 +105,13 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 
 	if (command == nodeMessageType_t::DOWNSTREAM_DATA_GET) {
 		if (!strcmp (doc[commandKey], relayKey)) {
-			DEBUG_WARN ("Request relay status. Relay = %s", relays->get(0)? "ON" : "OFF");
+			DEBUG_INFO ("Request relay status. Relay = %s", relays->get(0)? "ON" : "OFF");
 			if (!sendRelayStatus ()) {
 				DEBUG_WARN ("Error sending relay status");
 				return false;
 			}
         } else if (!strcmp (doc[commandKey], scheduleKey)) {
-            DEBUG_WARN ("Request schedule list");
+            DEBUG_INFO ("Request schedule list");
             int index = -1;
             if (doc.containsKey (elemKey)) {
                 index = doc[elemKey].as<int> ();
@@ -132,7 +132,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             }
 
         } else if (!strcmp (doc[commandKey], bootStateKey)) {
-			DEBUG_WARN ("Request boot status configuration. Boot = %d",
+			DEBUG_INFO ("Request boot status configuration. Boot = %d",
                         relays->getBootStatus());
 			if (!sendBootStatus ()) {
 				DEBUG_WARN ("Error sending boot status configuration");
@@ -237,7 +237,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                 sched_entry.enabled = doc["enable"].as<int> ();
             }
 
-            DEBUG_WARN ("Set schedule Time = %u:%u (%s). Mask " BYTE_TO_BINARY_PATTERN ". Action %d in relay %d. %s",
+            DEBUG_INFO ("Set schedule Time = %u:%u (%s). Mask " BYTE_TO_BINARY_PATTERN ". Action %d in relay %d. %s",
                         sched_entry.hour, sched_entry.minute, sched_entry.repeat ? "repeat" : "single", 
                         BYTE_TO_BINARY (sched_entry.weekMask), sched_entry.action, sched_entry.index, sched_entry.enabled?"Enabled":"Disabled");
             
@@ -247,7 +247,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                 int entry = -1;
                 entry = doc[elemKey].as<int> ();
                 if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
-                    DEBUG_WARN ("Entry replaced");
+                    DEBUG_DBG ("Entry replaced");
                     result = scheduler.replace (entry, &sched_entry);
                 } else { 
                     DEBUG_WARN ("Wrong entry value");
@@ -256,12 +256,12 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             } else {
                 result = scheduler.add (&sched_entry);
             }
-            DEBUG_WARN ("Result = %d", result);
+            DEBUG_DBG ("Result = %d", result);
             if (result >= 0){
                 return saveSchedule ();
             }
         } else if (!strcmp (doc[commandKey], scheduleDelKey)) {
-            DEBUG_WARN ("Remove Schedule request");
+            DEBUG_DBG ("Remove Schedule request");
             if (!doc.containsKey (elemKey)) {
                 DEBUG_WARN ("Wrong format");
                 return false;
@@ -270,13 +270,13 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             int result = unidentifiedError;
             entry = doc[elemKey].as<int> ();
             if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
-                DEBUG_WARN ("Entry replaced");
+                DEBUG_DBG ("Entry replaced");
                 result = scheduler.remove (entry);
             } else {
                 DEBUG_WARN ("Wrong entry value");
                 return false;
             }
-            DEBUG_WARN ("Result = %d", result);
+            DEBUG_DBG ("Result = %d", result);
             if (result >= 0) {
                 return saveSchedule ();
             }
@@ -285,7 +285,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				DEBUG_WARN ("Wrong format");
 				return false;
 			}
-			DEBUG_WARN ("Set boot status = %d", doc[bootStateKey].as<int> ());
+			DEBUG_INFO ("Set boot status = %d", doc[bootStateKey].as<int> ());
             bootRelayStatus_t newBootStatus;
             switch (doc[bootStateKey].as<int> ()){
                 case 1:
@@ -417,7 +417,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 #endif // HLW8012
 
 void CONTROLLER_CLASS_NAME::onSchedulerEvent (sched_event_t event) {
-    DEBUG_WARN ("Scheduler event %d, index %d, repeat %d", event.action, event.index, event.repeat);
+    DEBUG_INFO ("Scheduler event %d, index %d, repeat %d", event.action, event.index, event.repeat);
     if (event.action < TURN_OFF || event.action > TOGGLE) {
         DEBUG_WARN ("Schedule action error");
         return;
@@ -458,6 +458,15 @@ void CONTROLLER_CLASS_NAME::loop () {
 
 	// TODO: Sync LED with relay
 	digitalWrite (RELAY_LED, relays->get(0) ? LED_ON : LED_OFF);
+    
+    // static time_t last = millis ();
+    // if (millis () - last > 1000) {
+    //     last = millis ();
+
+    //     time_t now = time (NULL);
+    //     Serial.printf ("Current time %s", ctime (&now));
+    // }
+
 }
 
 CONTROLLER_CLASS_NAME::~CONTROLLER_CLASS_NAME () {
@@ -466,7 +475,7 @@ CONTROLLER_CLASS_NAME::~CONTROLLER_CLASS_NAME () {
 }
 
 void CONTROLLER_CLASS_NAME::configManagerStart () {
-    DEBUG_WARN ("==== CCost Controller Configuration start ====");
+    DEBUG_INFO ("==== CCost Controller Configuration start ====");
     // If you need to add custom configuration parameters do it here
 
     bootStatusParam = new AsyncWiFiManagerParameter ("bootStatus", "Boot Relay Status", "", 6, "required type=\"text\" list=\"bootStatusList\" pattern=\"^ON$|^OFF$|^SAVE$\"");
@@ -481,9 +490,9 @@ void CONTROLLER_CLASS_NAME::configManagerStart () {
 }
 
 void CONTROLLER_CLASS_NAME::configManagerExit (bool status) {
-    DEBUG_WARN ("==== CCost Controller Configuration result ====");
+    DEBUG_INFO ("==== CCost Controller Configuration result ====");
     // You can read configuration paramenter values here
-    DEBUG_WARN ("Boot Relay Status: %s", bootStatusParam->getValue ());
+    DEBUG_INFO ("Boot Relay Status: %s", bootStatusParam->getValue ());
 
     // TODO: Finish bootStatusParam analysis
 
@@ -499,10 +508,10 @@ void CONTROLLER_CLASS_NAME::configManagerExit (bool status) {
         if (!saveConfig ()) {
             DEBUG_ERROR ("Error writting blind controller config to filesystem.");
         } else {
-            DEBUG_WARN ("Configuration stored");
+            DEBUG_INFO ("Configuration stored");
         }
     } else {
-        DEBUG_WARN ("Configuration does not need to be saved");
+        DEBUG_INFO ("Configuration does not need to be saved");
     }
 }
 
@@ -515,7 +524,7 @@ bool CONTROLLER_CLASS_NAME::loadConfig () {
     if (!loadSchedule ()) {
         result = false;
     }
-    DEBUG_WARN ("Configuration loaded. Result: %d", result);
+    DEBUG_INFO ("Configuration loaded. Result: %d", result);
     return result;
 
 }
