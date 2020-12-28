@@ -108,6 +108,7 @@ public:
         uint8_t relayPins[] = { RELAY };
         uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
         relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS, &FILESYSTEM);
+        scheduler = new ActionScheduler (&FILESYSTEM);
     }
 
 	/**
@@ -163,7 +164,7 @@ protected:
 	bool restartTriggd = false;
 	//bool relayStatus;
     RelaySet *relays;
-    ActionScheduler scheduler;
+    ActionScheduler* scheduler;
     AsyncWiFiManagerParameter* bootStatusParam;
     AsyncWiFiManagerParameter* bootStatusListParam;
 
@@ -191,10 +192,6 @@ protected:
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
     
     bool sendBootStatus ();
-    
-    bool saveSchedule ();
-    
-    bool loadSchedule ();
     
 };
 

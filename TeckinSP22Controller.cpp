@@ -10,7 +10,6 @@ using namespace std;
 using namespace placeholders;
 
 constexpr auto CONFIG_FILE = "/customconf.json"; ///< @brief Custom configuration file name
-constexpr auto SCHED_FILE = "/schedule.json"; ///< @brief Custom schedule configuration file name
 
 // -----------------------------------------
 // You may add some global variables you need here,
@@ -118,9 +117,9 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             }
             char* schedStr = NULL;;
             if (index < 0) {
-                schedStr = scheduler.getJsonChr ();
+                schedStr = scheduler->getJsonChr ();
             } else if (index < SCHED_MAX_ENTRIES) {
-                schedStr = scheduler.getJsonChr (index);
+                schedStr = scheduler->getJsonChr (index);
             }
             if (!schedStr){
                 DEBUG_WARN ("Error in schedule list");
@@ -248,17 +247,17 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                 entry = doc[elemKey].as<int> ();
                 if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
                     DEBUG_DBG ("Entry replaced");
-                    result = scheduler.replace (entry, &sched_entry);
+                    result = scheduler->replace (entry, &sched_entry);
                 } else { 
                     DEBUG_WARN ("Wrong entry value");
                     return false;
                 }
             } else {
-                result = scheduler.add (&sched_entry);
+                result = scheduler->add (&sched_entry);
             }
             DEBUG_DBG ("Result = %d", result);
             if (result >= 0){
-                return saveSchedule ();
+                return scheduler->save ();
             }
         } else if (!strcmp (doc[commandKey], scheduleDelKey)) {
             DEBUG_DBG ("Remove Schedule request");
@@ -271,14 +270,14 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             entry = doc[elemKey].as<int> ();
             if (entry >= 0 || entry < SCHED_MAX_ENTRIES) {
                 DEBUG_DBG ("Entry replaced");
-                result = scheduler.remove (entry);
+                result = scheduler->remove (entry);
             } else {
                 DEBUG_WARN ("Wrong entry value");
                 return false;
             }
             DEBUG_DBG ("Result = %d", result);
             if (result >= 0) {
-                return saveSchedule ();
+                return scheduler->save ();
             }
         } else if (!strcmp (doc[commandKey], bootStateKey)) {
 			if (!doc.containsKey (bootStateKey)) {
@@ -364,7 +363,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
     // uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
     // relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
 
-    scheduler.onEvent (std::bind (&CONTROLLER_CLASS_NAME::onSchedulerEvent, this, _1));
+    scheduler->onEvent (std::bind (&CONTROLLER_CLASS_NAME::onSchedulerEvent, this, _1));
 
 	// Send a 'hello' message when initalizing is finished
 	sendStartAnouncement ();
@@ -446,7 +445,7 @@ void CONTROLLER_CLASS_NAME::loop () {
 
 	button->loop ();
     
-    scheduler.loop ();
+    scheduler->loop ();
 
 #if HLW8012
     static unsigned long last = millis ();
@@ -519,33 +518,15 @@ bool CONTROLLER_CLASS_NAME::loadConfig () {
 	// If you need to read custom configuration data do it here
     bool result = true;
     if (!relays->load ()) {
+        DEBUG_WARN ("Error loading relays info");
         result = false;
     }
-    if (!loadSchedule ()) {
+    if (!scheduler->load ()) {
+        DEBUG_WARN ("Error loading schedule info");
         result = false;
     }
     DEBUG_INFO ("Configuration loaded. Result: %d", result);
     return result;
-
-}
-
-bool CONTROLLER_CLASS_NAME::loadSchedule () {
-    File sched;
-
-    if (!FILESYSTEM.exists (SCHED_FILE)) {
-        sched = FILESYSTEM.open (SCHED_FILE, "w");
-        if (sched) {
-            return scheduler.save (sched);
-        } else {
-            return false;
-        }
-    }
-    sched = FILESYSTEM.open (SCHED_FILE, "r");
-    if (sched) {
-        return scheduler.load (sched);
-    } else {
-        return false;
-    }
 
 }
 
@@ -556,19 +537,10 @@ bool CONTROLLER_CLASS_NAME::saveConfig () {
     if (!relays->save ()) {
         result = false;
     }
-    if (!saveSchedule ()){
+    if (!scheduler->save ()) {
         result = false;
     }
     return result;
-}
-
-bool CONTROLLER_CLASS_NAME::saveSchedule() {
-    File sched = FILESYSTEM.open (SCHED_FILE, "w");
-    if (sched) {
-        return scheduler.save (sched);
-    } else {
-        return false;
-    }
 }
 
 bool CONTROLLER_CLASS_NAME::sendRelayStatus () {

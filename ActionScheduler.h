@@ -9,6 +9,8 @@
 #define SCHED_MAX_ENTRIES 6
 #endif
 
+constexpr auto SCHED_FILE = "/schedule.json"; ///< @brief Custom schedule configuration file name
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
   (byte & 0x80 ? '1' : '0'), \
@@ -54,8 +56,11 @@ typedef std::function<void (sched_event_t)> onSchedEventCb_t; ///< @brief Event 
 class ActionScheduler {
     schedule_t entries[SCHED_MAX_ENTRIES];
     onSchedEventCb_t callback;
+    FS* filesystem;
     
 public:
+    ActionScheduler (FS* fs) : filesystem{fs} {}
+        
     int8_t add (schedule_t* entry);
     
     int8_t remove (uint8_t index);
@@ -76,9 +81,9 @@ public:
         callback = handler;
     }
     
-    bool save (File file);
+    bool save ();
     
-    bool load (File file);
+    bool load ();
     
 protected:
     

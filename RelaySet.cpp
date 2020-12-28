@@ -84,17 +84,21 @@ void RelaySet::setAll (bool status) {
 bool RelaySet::load () {
     File relayFile;
     if (!filesystem) {
+        //Serial.printf ("Filesystem relayFile load error\n");
         return false;
     }
+    filesystem->begin ();
     if (!filesystem->exists (RELAY_FILE)) {
         return save ();
     }
     relayFile = filesystem->open (RELAY_FILE, "r");
 
     if (!relayFile) {
+        //Serial.printf ("relayFile load error\n");
         return false;
     }
     if (relayFile.size () != numRelays * sizeof (relayContext_t)) {
+        //Serial.printf ("relayFile size error\n");
         return false;
     }
     relayFile.read ((uint8_t*)bootStatus, numRelays * sizeof (relayContext_t));
@@ -107,11 +111,14 @@ bool RelaySet::load () {
 bool RelaySet::save () {
     File relayFile;
     if (!filesystem) {
+        //Serial.printf ("Filesystem relayFile save error\n");
         return false;
     }
+    filesystem->begin ();
     relayFile = filesystem->open (RELAY_FILE, "w");
 
     if (!relayFile) {
+        //Serial.printf ("relayFile save error\n");
         return false;
     }
     size_t size = relayFile.write ((uint8_t*)bootStatus, numRelays * sizeof (relayContext_t));
@@ -121,6 +128,7 @@ bool RelaySet::save () {
         //Serial.printf ("Relay config saved\n");
         return true;
     } else {
+        Serial.printf ("Relay config save error\n");
         return false;
     }
 }

@@ -366,29 +366,53 @@ bool ActionScheduler::enable (uint8_t index, bool enableFlag) {
     return false;
 }
 
-bool ActionScheduler::save (File file){
-    if(!file){
+bool ActionScheduler::save (){
+    File schedFile;
+    if (!filesystem) {
+        //Serial.printf ("Filesystem schedFile save error\n");
         return false;
     }
-    size_t size = file.write ((uint8_t*)entries, sizeof (entries));
-    file.flush ();
-    file.close ();
+    filesystem->begin ();
+    schedFile = filesystem->open (SCHED_FILE, "w");
+
+    if (!schedFile) {
+        //Serial.printf ("schedFile save error\n");
+        return false;
+    }
+    size_t size = schedFile.write ((uint8_t*)entries, sizeof (entries));
+    schedFile.flush ();
+    schedFile.close ();
     if (size == sizeof (entries)) {
+        //Serial.printf ("Schedule config saved\n");
         return true;
     } else {
+        //Serial.printf ("Schedule config save eror\n");
         return false;
     }
 }
 
-bool ActionScheduler::load (File file){
-    if (!file) {
+bool ActionScheduler::load (){
+    File schedFile;
+    if (!filesystem) {
+        //Serial.printf ("Filesystem schedFile load error\n");
         return false;
     }
-    if (file.size () != sizeof (entries)) {
+    filesystem->begin ();
+    if (!filesystem->exists (SCHED_FILE)) {
+        return save ();
+    }
+    schedFile = filesystem->open (SCHED_FILE, "r");
+    
+    if (!schedFile) {
+        //Serial.printf ("schedFile load error\n");
         return false;
     }
-    file.read ((uint8_t*)entries, sizeof (entries));
-    file.close ();
+    if (schedFile.size () != sizeof (entries)) {
+        //Serial.printf ("schedFile size error\n");
+        return false;
+    }
+    schedFile.read ((uint8_t*)entries, sizeof (entries));
+    schedFile.close ();
 
     return true;
 }
