@@ -407,8 +407,13 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 		const int period = 3600 * 1000 / UPDATE_TIME;
 		double dcurrent = (energy - lastEnergy) * period / voltage;
 		json["dcurrent"] = dcurrent;
-	}
-    json["rly"] = relays->get(0);
+    }
+    String key = relayKey;
+    for (uint i = 0; i < NUM_RELAYS; i++) {
+        key += i;
+        json[key.c_str ()] = relays->get (i) ? 1 : 0;
+    }
+    //json["rly"] = relays->get(0);
 	lastEnergy = energy;
 
 	sendJson (json);
