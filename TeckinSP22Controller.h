@@ -9,6 +9,8 @@
 	#include "WProgram.h"
 #endif
 
+#define TEST_MODE 0
+
 #ifndef ENABLE_HLW8012
 #define ENABLE_HLW8012  1
 #endif //ENABLE_HLW8012
@@ -33,15 +35,22 @@ static const char* CONTROLLER_NAME = "Teckin SP22 v1.4";
 // --------------------------------------------------
 //constexpr auto RED_LED = 0;
 //constexpr auto BLUE_LED = 2;
+#if !TEST_MODE
 #ifndef BUTTON
 constexpr auto BUTTON = 1;
 #endif
 constexpr auto RED_LED_INV = 3;
+#else
+constexpr auto BUTTON = -1;
+constexpr auto RED_LED_INV = -1;
+#endif // TEST_MODE
 #ifndef BLUE_LED_INV
 constexpr auto BLUE_LED_INV = 13;
 #endif
-#ifndef RELAY
+#if !defined RELAY && !TEST_MODE
 constexpr auto RELAY = 14;
+#else
+constexpr auto RELAY = 2;
 #endif
 #if ENABLE_HLW8012
 constexpr auto HLW_CF = 4;

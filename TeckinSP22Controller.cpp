@@ -51,10 +51,11 @@ void CONTROLLER_CLASS_NAME::calibrate () {
 	}
 
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
+#if !TEST_MODE
 	hlw8012.expectedActivePower (60);
 	hlw8012.expectedVoltage (226.0);
 	hlw8012.expectedCurrent (60.0 / 226.0);
-
+#endif // TEST_MODE
 	// TODO: Show corrected factors
 	//debugW ("[HLW] New current multiplier : %f", hlw8012.getCurrentMultiplier ());
 	//debugW ("[HLW] New voltage multiplier : %f", hlw8012.getVoltageMultiplier ());
@@ -354,8 +355,10 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
 	// You do node setup here. Use it as it was the normal setup() Arduino function
 	button = new DebounceEvent (BUTTON, std::bind(&CONTROLLER_CLASS_NAME::buttonCb, this, _1, _2, _3, _4), BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
+#if !TEST_MODE
 	pinMode (RED_LED_INV, OUTPUT);
 	digitalWrite (RED_LED_INV, HIGH);
+#endif // TEST_MODE
 	pinMode (BLUE_LED_INV, OUTPUT);
 	digitalWrite (BLUE_LED_INV, HIGH);
 	//pinMode (RELAY, OUTPUT);
@@ -367,8 +370,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
 	// Send a 'hello' message when initalizing is finished
 	sendStartAnouncement ();
-#if ENABLE_HLW8012
-
+#if ENABLE_HLW8012 && !TEST_MODE
 	hlw8012.begin (HLW_CF, HLW_CF1, HLW_SEL, CURRENT_MODE, true);
 	hlw8012.setResistors (CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
 	hlw8012.setCurrentMultiplier (HLW8012_CURRENT_RATIO);
@@ -395,6 +397,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	const size_t capacity = JSON_OBJECT_SIZE (8);
 	DynamicJsonDocument json (capacity);
+#if !TEST_MODE
 	json["Power_W"] = hlw8012.getActivePower ();
 	json["Power_VA"] = hlw8012.getApparentPower ();
 	json["P_Factor"] = (int)(100 * hlw8012.getPowerFactor ());
@@ -402,6 +405,15 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	json["Voltage"] = voltage;
 	json["Current"] = hlw8012.getCurrent ();
 	double energy = (double)hlw8012.getEnergy () / 3600.0;
+#else
+    json["Power_W"] = 888;
+    json["Power_VA"] = 77;
+    json["P_Factor"] = 99;
+    unsigned int voltage = hlw8012.getVoltage ();
+    json["Voltage"] = 222;
+    json["Current"] = 66;
+    double energy = 33;
+#endif // TEST_MODE
 	json["Wh"] = energy;
 	if (voltage != 0) {
 		const int period = 3600 * 1000 / UPDATE_TIME;
