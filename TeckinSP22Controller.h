@@ -49,7 +49,7 @@ constexpr auto BLUE_LED_INV = 13;
 #endif
 #if !defined RELAY && !TEST_MODE
 constexpr auto RELAY = 14;
-#else
+#elif !defined RELAY
 constexpr auto RELAY = 2;
 #endif
 #if ENABLE_HLW8012

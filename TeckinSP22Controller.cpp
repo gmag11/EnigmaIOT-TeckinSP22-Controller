@@ -19,7 +19,7 @@ constexpr auto CONFIG_FILE = "/customconf.json"; ///< @brief Custom configuratio
 HLW8012 hlw8012;
 #endif // ENABLE_HLW8012
 
-const char* relayKey = "rly";
+const char* relayKey = "swi";
 const char* commandKey = "cmd";
 const char* restartValue = "restart";
 const char* toggleKey = "toggle";
@@ -156,22 +156,18 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			serializeJson (doc, temp, 200);
 			DEBUG_DBG ("%s", temp);
             DEBUG_INFO ("Set relay status. Relay %d = %d", index, doc[relayKey].as<int> ());
-			if (doc[relayKey].is<int> ()) {
-				int value = doc[relayKey].as<int> ();
+			if (doc[relayKey].is<String> ()) {
+				String value = doc[relayKey].as<String> ();
 				DEBUG_DBG ("%s is %d", relayKey, value);
-				switch (value) {
-				case 0:
-					DEBUG_INFO ("setRelay (false)");
+                if (value.equalsIgnoreCase ("off")) {
+                    DEBUG_INFO ("setRelay (false)");
                     relays->set (index, false);
-					break;
-				case 1:
-					DEBUG_INFO ("setRelay (true)");
+                } else if (value.equalsIgnoreCase ("on")) {
+                    DEBUG_INFO ("setRelay (true)");
                     relays->set (index, true);
-					break;
-				case 2:
+                } else if (value.equalsIgnoreCase ("togl")) {
                     relays->toggle (index);
-					break;
-				default:
+                } else {
 					return false;
 				}
 			} else {
@@ -423,7 +419,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
         key += i;
-        json[key.c_str ()] = relays->get (i) ? 1 : 0;
+        json[key.c_str ()] = relays->get (i) ? "on" : "off";
     }
     //json["rly"] = relays->get(0);
 	lastEnergy = energy;
@@ -568,7 +564,7 @@ bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
         key += i;
-        json[key.c_str()] = relays->get (i) ? 1 : 0;    
+        json[key.c_str()] = relays->get (i) ? "on" : "off";    
     }
 
 	return sendJson (json);
