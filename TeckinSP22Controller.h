@@ -22,6 +22,9 @@
 #include "RelaySet.h"
 #include "ActionScheduler.h"
 #include <TZ.h>
+#include <haEntity.h>
+#include <haSwitch.h>
+#include <haSensor.h>
 
 //#define DEBUG_SERIAL
 
@@ -201,6 +204,18 @@ protected:
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
     
     bool sendBootStatus ();
+
+    void buildHASwitch ();
+
+    void buildHACurrent ();
+
+    void buildHAPowerW ();
+
+    void buildHAPowerVA ();
+
+    void buildHAVoltage ();
+
+    void buildHAPFactor ();
     
 };
 

@@ -605,4 +605,230 @@ bool CONTROLLER_CLASS_NAME::sendBootStatus () {
 
 void CONTROLLER_CLASS_NAME::connectInform () {
 	sendStartAnouncement ();
+void CONTROLLER_CLASS_NAME::buildHASwitch () {
+
+    HASwitch* haEntity = new HASwitch ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("switch");
+    haEntity->setPayloadOff ("{\"cmd\":\"swi\",\"swi\":\"off\",\"idx\":0}");
+    haEntity->setPayloadOn ("{\"cmd\":\"swi\",\"swi\":\"on\",\"idx\":0}");
+    haEntity->setValueField ("swi0");
+    haEntity->setStateOff ("off");
+    haEntity->setStateOn ("on");
+    
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+}
+
+void CONTROLLER_CLASS_NAME::buildHACurrent () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("current");
+    haEntity->setDeviceClass (sensor_current);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("Current");
+    haEntity->setUnitOfMeasurement ("A");
+    
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAPowerW () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("powerw");
+    haEntity->setDeviceClass (sensor_power);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("Power_W");
+    haEntity->setUnitOfMeasurement ("W");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAPowerVA () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("powerva");
+    haEntity->setDeviceClass (sensor_power);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("Power_VA");
+    haEntity->setUnitOfMeasurement ("VA");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAVoltage () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("volt");
+    haEntity->setDeviceClass (sensor_voltage);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("Voltage");
+    haEntity->setUnitOfMeasurement ("V");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAPFactor () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("pf");
+    haEntity->setDeviceClass (sensor_power_factor);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("P_Factor");
+    haEntity->setUnitOfMeasurement ("%");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
 }
