@@ -141,7 +141,11 @@ public:
 	 */
 	bool loadConfig ();
 
-	void connectInform ();
+    void connectInform () {
+        EnigmaIOTjsonController::connectInform ();
+        // Add more actions here if needed
+        // Keep this method duration short
+    }
 
 protected:
 	/**

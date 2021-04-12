@@ -375,6 +375,13 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	setInterrupts ();
 #endif // ENABLE_HLW8012
 
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHACurrent, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPFactor, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerVA, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerW, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAVoltage, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHASwitch, this));
+
     //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
     relays->begin ();
@@ -603,8 +610,6 @@ bool CONTROLLER_CLASS_NAME::sendBootStatus () {
     return sendJson (json);
 }
 
-void CONTROLLER_CLASS_NAME::connectInform () {
-	sendStartAnouncement ();
 void CONTROLLER_CLASS_NAME::buildHASwitch () {
 
     HASwitch* haEntity = new HASwitch ();
