@@ -158,7 +158,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             DEBUG_INFO ("Set relay status. Relay %d = %d", index, doc[relayKey].as<int> ());
 			if (doc[relayKey].is<String> ()) {
 				String value = doc[relayKey].as<String> ();
-				DEBUG_DBG ("%s is %d", relayKey, value);
+				DEBUG_DBG ("%s is %s", relayKey, value.c_str());
                 if (value.equalsIgnoreCase ("off")) {
                     DEBUG_INFO ("setRelay (false)");
                     relays->set (index, false);
@@ -320,8 +320,9 @@ void CONTROLLER_CLASS_NAME::sendButtonEvent (uint8_t pin, uint8_t event, uint8_t
 	json[buttonKey] = pin;
 	json["event"] = event;
 	json["count"] = count;
-	json["len"] = length;
-	sendJson (json);
+    json["len"] = length < LONG_PUSH_THRESHOLD ? "short" : "long";
+
+    sendJson (json);
 }
 
 void CONTROLLER_CLASS_NAME::buttonCb (uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
@@ -351,10 +352,8 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
 	// You do node setup here. Use it as it was the normal setup() Arduino function
 	button = new DebounceEvent (BUTTON, std::bind(&CONTROLLER_CLASS_NAME::buttonCb, this, _1, _2, _3, _4), BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-#if !TEST_MODE
 	pinMode (RED_LED_INV, OUTPUT);
 	digitalWrite (RED_LED_INV, HIGH);
-#endif // TEST_MODE
 	pinMode (BLUE_LED_INV, OUTPUT);
 	digitalWrite (BLUE_LED_INV, HIGH);
 	//pinMode (RELAY, OUTPUT);
@@ -381,6 +380,8 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerW, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAVoltage, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHASwitch, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAShortButton, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHALongButton, this));
 
     //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
@@ -836,4 +837,74 @@ void CONTROLLER_CLASS_NAME::buildHAPFactor () {
         free (msgPackBuffer);
     }
 
+}
+
+void CONTROLLER_CLASS_NAME::buildHAShortButton () {
+    HATrigger* haEntity = new HATrigger ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("short");
+    haEntity->setType (button_short_press);
+    haEntity->setSubtype (button_1);
+    haEntity->setPayload ("{\"cmd\":\"button\",\"button\":14,\"event\":3,\"count\":1,\"len\":\"short\"}");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+}
+
+void CONTROLLER_CLASS_NAME::buildHALongButton () {
+    HATrigger* haEntity = new HATrigger ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("long");
+    haEntity->setType (button_long_press);
+    haEntity->setSubtype (button_1);
+    haEntity->setPayload ("{\"cmd\":\"button\",\"button\":14,\"event\":3,\"count\":1,\"len\":\"long\"}");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
 }

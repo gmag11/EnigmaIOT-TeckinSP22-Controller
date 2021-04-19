@@ -25,6 +25,7 @@
 #include <haEntity.h>
 #include <haSwitch.h>
 #include <haSensor.h>
+#include <haTrigger.h>
 
 //#define DEBUG_SERIAL
 
@@ -48,7 +49,7 @@ constexpr auto BUTTON = -1;
 constexpr auto RED_LED_INV = -1;
 #endif // TEST_MODE
 #ifndef BLUE_LED_INV
-constexpr auto BLUE_LED_INV = 13;
+constexpr auto BLUE_LED_INV = 13; // D7
 #endif
 #if !defined RELAY && !TEST_MODE
 constexpr auto RELAY = 14;
@@ -56,9 +57,9 @@ constexpr auto RELAY = 14;
 constexpr auto RELAY = 2;
 #endif
 #if ENABLE_HLW8012
-constexpr auto HLW_CF = 4;
-constexpr auto HLW_CF1 = 5;
-constexpr auto HLW_SEL = 12;
+constexpr auto HLW_CF = 4; // D2
+constexpr auto HLW_CF1 = 5;  // D1
+constexpr auto HLW_SEL = 12; // D6
 
 #define UPDATE_TIME                     10000
 #define CURRENT_MODE                    LOW
@@ -72,6 +73,8 @@ constexpr auto HLW_SEL = 12;
 #define HLW8012_POWER_RATIO         3304057 //2533110
 #define HLW8012_INTERRUPT_ON        FALLING
 #endif // ENABLE_HLW8012
+
+#define LONG_PUSH_THRESHOLD 1000
 
 #define RELAY_ON_POLARITY HIGH
 //#define RELAY_OFF !RELAY_ON_POLARITY
@@ -220,7 +223,11 @@ protected:
     void buildHAVoltage ();
 
     void buildHAPFactor ();
-    
+
+    void buildHAShortButton ();
+
+    void buildHALongButton ();
+
 };
 
 #endif
