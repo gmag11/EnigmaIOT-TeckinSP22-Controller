@@ -215,8 +215,12 @@ protected:
     void buildHASwitch ();
 
     void buildHACurrent ();
+    
+    void buildHAdCurrent ();
 
     void buildHAPowerW ();
+
+    void buildHAEnergyWh ();
 
     void buildHAPowerVA ();
 
@@ -227,6 +231,8 @@ protected:
     void buildHAShortButton ();
 
     void buildHALongButton ();
+
+    void buildHAdPower ();
 
 };
 

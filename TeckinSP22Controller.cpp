@@ -375,9 +375,12 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 #endif // ENABLE_HLW8012
 
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHACurrent, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdCurrent, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPFactor, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerVA, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerW, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdPower, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAEnergyWh, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAVoltage, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHASwitch, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAShortButton, this));
@@ -422,7 +425,8 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	if (voltage != 0) {
 		const int period = 3600 * 1000 / UPDATE_TIME;
 		double dcurrent = (energy - lastEnergy) * period / voltage;
-		json["dcurrent"] = dcurrent;
+        json["dcurrent"] = dcurrent;
+        json["dW"] = dcurrent * (double)voltage;
     }
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
@@ -687,6 +691,44 @@ void CONTROLLER_CLASS_NAME::buildHACurrent () {
 
 }
 
+void CONTROLLER_CLASS_NAME::buildHAdCurrent () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("dcurrent");
+    haEntity->setDeviceClass (sensor_current);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("dcurrent");
+    haEntity->setUnitOfMeasurement ("A");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
 void CONTROLLER_CLASS_NAME::buildHAPowerW () {
 
     HASensor* haEntity = new HASensor ();
@@ -703,6 +745,83 @@ void CONTROLLER_CLASS_NAME::buildHAPowerW () {
     haEntity->setExpireTime (600);
     haEntity->setValueField ("Power_W");
     haEntity->setUnitOfMeasurement ("W");
+    haEntity->allowSendAttributes ();
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAdPower () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("dpowerw");
+    haEntity->setDeviceClass (sensor_power);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("dW");
+    haEntity->setUnitOfMeasurement ("W");
+
+    size_t bufferLen = haEntity->measureMessage ();
+
+    msgPackBuffer = (uint8_t*)malloc (bufferLen);
+
+    size_t len = haEntity->getAnounceMessage (bufferLen, msgPackBuffer);
+
+    DEBUG_WARN ("Resulting MSG pack length: %d", len);
+
+    if (!sendHADiscovery (msgPackBuffer, len)) {
+        DEBUG_WARN ("Error sending HA discovery message");
+    }
+
+    if (haEntity) {
+        delete (haEntity);
+    }
+    if (msgPackBuffer) {
+        free (msgPackBuffer);
+    }
+
+}
+
+void CONTROLLER_CLASS_NAME::buildHAEnergyWh () {
+
+    HASensor* haEntity = new HASensor ();
+
+    uint8_t* msgPackBuffer;
+
+    if (!haEntity) {
+        DEBUG_WARN ("JSON object instance does not exist");
+        return; // If json object was not created
+    }
+
+    haEntity->setNameSufix ("energy");
+    haEntity->setDeviceClass (sensor_energy);
+    haEntity->setExpireTime (600);
+    haEntity->setValueField ("Wh");
+    haEntity->setUnitOfMeasurement ("Wh");
 
     size_t bufferLen = haEntity->measureMessage ();
 
@@ -852,7 +971,9 @@ void CONTROLLER_CLASS_NAME::buildHAShortButton () {
     haEntity->setNameSufix ("short");
     haEntity->setType (button_short_press);
     haEntity->setSubtype (button_1);
-    haEntity->setPayload ("{\"cmd\":\"button\",\"button\":14,\"event\":3,\"count\":1,\"len\":\"short\"}");
+    char pld[100];
+    snprintf (pld, 100, "{\"cmd\":\"button\",\"button\":%d,\"event\":3,\"count\":1,\"len\":\"short\"}", BUTTON);
+    haEntity->setPayload (pld);
 
     size_t bufferLen = haEntity->measureMessage ();
 
@@ -887,8 +1008,9 @@ void CONTROLLER_CLASS_NAME::buildHALongButton () {
     haEntity->setNameSufix ("long");
     haEntity->setType (button_long_press);
     haEntity->setSubtype (button_1);
-    haEntity->setPayload ("{\"cmd\":\"button\",\"button\":14,\"event\":3,\"count\":1,\"len\":\"long\"}");
-
+    char pld[100];
+    snprintf (pld, 100, "{\"cmd\":\"button\",\"button\":%d,\"event\":3,\"count\":1,\"len\":\"long\"}", BUTTON);
+    haEntity->setPayload (pld);
     size_t bufferLen = haEntity->measureMessage ();
 
     msgPackBuffer = (uint8_t*)malloc (bufferLen);
