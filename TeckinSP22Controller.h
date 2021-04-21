@@ -190,6 +190,7 @@ protected:
 #if ENABLE_HLW8012
     bool doCalibration = false;
     double lastEnergy;
+    clock_t lastGotEnergy;
 
 	void setInterrupts ();
 

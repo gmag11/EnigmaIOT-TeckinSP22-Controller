@@ -410,7 +410,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	json["P_Factor"] = (int)(100 * hlw8012.getPowerFactor ());
 	unsigned int voltage = hlw8012.getVoltage ();
 	json["Voltage"] = voltage;
-	json["Current"] = hlw8012.getCurrent ();
+    json["Current"] = roundf (hlw8012.getCurrent () * 1000) / 1000;
 	double energy = (double)hlw8012.getEnergy () / 3600.0;
 #else
     json["Power_W"] = 888;
@@ -421,12 +421,13 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
     json["Current"] = 66;
     double energy = 33;
 #endif // TEST_MODE
-	json["Wh"] = energy;
+    json["Wh"] = roundf (energy * 100) / 100;
 	if (voltage != 0) {
-		const int period = 3600 * 1000 / UPDATE_TIME;
+        const int period = 3600 * 1000 / (millis () - lastGotEnergy);
 		double dcurrent = (energy - lastEnergy) * period / voltage;
-        json["dcurrent"] = dcurrent;
-        json["dW"] = dcurrent * (double)voltage;
+        json["dcurrent"] = roundf (dcurrent * 1000) / 1000;
+        double dW = dcurrent * (double)voltage;
+        json["dW"] = roundf (dW * 1000) / 1000;
     }
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
@@ -434,8 +435,8 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
         json[key.c_str ()] = relays->get (i) ? "on" : "off";
     }
     //json["rly"] = relays->get(0);
-	lastEnergy = energy;
-
+    lastEnergy = energy;
+    lastGotEnergy = millis ();
 	sendJson (json);
 }
 #endif // ENABLE_HLW8012
