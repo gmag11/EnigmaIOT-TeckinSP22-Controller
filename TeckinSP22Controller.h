@@ -194,7 +194,7 @@ protected:
 
 	void setInterrupts ();
 
-	void calibrate ();
+    void calibrate (unsigned int power = 60, unsigned int voltage = 225);
 
     void sendHLWmeasurement ();
 #endif // ENABLE_HLW8012

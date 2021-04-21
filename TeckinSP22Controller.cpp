@@ -30,6 +30,8 @@ const char* scheduleKey = "sched";
 const char* scheduleAddKey = "schedadd";
 const char* scheduleDelKey = "scheddel";
 const char* elemKey = "entry";
+const char* calibrateKey = "cal";
+const char* resetEnergyKey = "resetEnergy";
 
 #if ENABLE_HLW8012
 void ICACHE_RAM_ATTR hlw8012_cf1_interrupt () {
@@ -43,18 +45,20 @@ void CONTROLLER_CLASS_NAME::setInterrupts () {
 	attachInterrupt (HLW_CF1, hlw8012_cf1_interrupt, HLW8012_INTERRUPT_ON);
 	attachInterrupt (HLW_CF, hlw8012_cf_interrupt, HLW8012_INTERRUPT_ON);
 }
-void CONTROLLER_CLASS_NAME::calibrate () {
+void CONTROLLER_CLASS_NAME::calibrate (unsigned int power, unsigned int voltage) {
 	// Let some time to register values
-	unsigned long timeout = millis ();
-	while ((millis () - timeout) < 10000) {
-		delay (1);
-	}
+    unsigned long timeout = millis ();
+    // while ((millis () - timeout) < 10000) {
+    //     //delay (1);
+    //     yield ();
+    //     ESP.wdtFeed ();
+    // }
 
 	// Calibrate using a 60W bulb (pure resistive) on a 230V line
 #if !TEST_MODE
-	hlw8012.expectedActivePower (60);
-	hlw8012.expectedVoltage (226.0);
-	hlw8012.expectedCurrent (60.0 / 226.0);
+    hlw8012.expectedActivePower (power);
+    hlw8012.expectedVoltage (voltage);
+	hlw8012.expectedCurrent ((double)power / (double)voltage);
 #endif // TEST_MODE
 	// TODO: Show corrected factors
 	//debugW ("[HLW] New current multiplier : %f", hlw8012.getCurrentMultiplier ());
@@ -156,16 +160,16 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			serializeJson (doc, temp, 200);
 			DEBUG_DBG ("%s", temp);
             DEBUG_INFO ("Set relay status. Relay %d = %d", index, doc[relayKey].as<int> ());
-			if (doc[relayKey].is<String> ()) {
-				String value = doc[relayKey].as<String> ();
+			if (doc[relayKey].is<int> ()) {
+				int value = doc[relayKey].as<int> ();
 				DEBUG_DBG ("%s is %s", relayKey, value.c_str());
-                if (value.equalsIgnoreCase ("off")) {
+                if (value == 0) {
                     DEBUG_INFO ("setRelay (false)");
                     relays->set (index, false);
-                } else if (value.equalsIgnoreCase ("on")) {
+                } else if (value == 1) {
                     DEBUG_INFO ("setRelay (true)");
                     relays->set (index, true);
-                } else if (value.equalsIgnoreCase ("togl")) {
+                } else if (value == 2) {
                     relays->toggle (index);
                 } else {
 					return false;
@@ -301,7 +305,23 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				return false;
 			}
 
-		}
+        } else if (!strcmp (doc[commandKey], calibrateKey)) {
+            unsigned int power;
+            unsigned int voltage;
+            if (doc.containsKey ("pow") && doc["pow"].is<int> ()) {
+                power = doc["pow"].as<int> ();
+                if (doc.containsKey ("volt") && doc["volt"].is<int> ()) {
+                    voltage = doc["volt"];
+                    calibrate (power, voltage);
+                } else {
+                    calibrate (power);
+                }
+            } else {
+                calibrate ();
+            }
+        } else if (!strcmp (doc[commandKey], resetEnergyKey)) {
+            hlw8012.resetEnergy ();
+        }
 	}
 
 	return true;
@@ -402,7 +422,7 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 
 #if ENABLE_HLW8012
 void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
-	const size_t capacity = JSON_OBJECT_SIZE (8);
+	const size_t capacity = JSON_OBJECT_SIZE (10);
 	DynamicJsonDocument json (capacity);
 #if !TEST_MODE
 	json["Power_W"] = hlw8012.getActivePower ();
@@ -424,15 +444,17 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
     json["Wh"] = roundf (energy * 100) / 100;
 	if (voltage != 0) {
         const int period = 3600 * 1000 / (millis () - lastGotEnergy);
-		double dcurrent = (energy - lastEnergy) * period / voltage;
-        json["dcurrent"] = roundf (dcurrent * 1000) / 1000;
-        double dW = dcurrent * (double)voltage;
-        json["dW"] = roundf (dW * 1000) / 1000;
+        double dcurrent = (energy - lastEnergy) * period / voltage;
+        if (dcurrent > 0) {
+            json["dcurrent"] = roundf (dcurrent * 1000) / 1000;
+            double dW = dcurrent * (double)voltage;
+            json["dW"] = roundf (dW * 1000) / 1000;
+        }
     }
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
         key += i;
-        json[key.c_str ()] = relays->get (i) ? "on" : "off";
+        json[key.c_str ()] = relays->get (i) ? 1 : 0;
     }
     //json["rly"] = relays->get(0);
     lastEnergy = energy;
@@ -577,7 +599,7 @@ bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
     String key = relayKey;
     for (uint i = 0; i < NUM_RELAYS; i++) {
         key += i;
-        json[key.c_str()] = relays->get (i) ? "on" : "off";    
+        json[key.c_str()] = relays->get (i) ? 1 : 0;    
     }
 
 	return sendJson (json);
@@ -628,11 +650,11 @@ void CONTROLLER_CLASS_NAME::buildHASwitch () {
     }
 
     haEntity->setNameSufix ("switch");
-    haEntity->setPayloadOff ("{\"cmd\":\"swi\",\"swi\":\"off\",\"idx\":0}");
-    haEntity->setPayloadOn ("{\"cmd\":\"swi\",\"swi\":\"on\",\"idx\":0}");
+    haEntity->setPayloadOff ("{\"cmd\":\"swi\",\"swi\":0,\"idx\":0}");
+    haEntity->setPayloadOn ("{\"cmd\":\"swi\",\"swi\":1,\"idx\":0}");
     haEntity->setValueField ("swi0");
-    haEntity->setStateOff ("off");
-    haEntity->setStateOn ("on");
+    haEntity->setStateOff (0);
+    haEntity->setStateOn (1);
     
     size_t bufferLen = haEntity->measureMessage ();
 
