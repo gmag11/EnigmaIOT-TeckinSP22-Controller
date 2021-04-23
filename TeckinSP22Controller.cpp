@@ -305,7 +305,9 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				return false;
 			}
 
-        } else if (!strcmp (doc[commandKey], calibrateKey)) {
+        }
+#if ENABLE_HLW8012
+        else if (!strcmp (doc[commandKey], calibrateKey)) {
             unsigned int power;
             unsigned int voltage;
             if (doc.containsKey ("pow") && doc["pow"].is<int> ()) {
@@ -322,7 +324,8 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
         } else if (!strcmp (doc[commandKey], resetEnergyKey)) {
             hlw8012.resetEnergy ();
         }
-	}
+#endif // ENABLE_HLW8012
+    }
 
 	return true;
 }
