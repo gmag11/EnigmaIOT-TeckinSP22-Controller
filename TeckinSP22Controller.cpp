@@ -370,7 +370,24 @@ void CONTROLLER_CLASS_NAME::buttonCb (uint8_t pin, uint8_t event, uint8_t count,
 	}
 }
 
-void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
+void CONTROLLER_CLASS_NAME::connectInform () {
+
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHACurrent, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdCurrent, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPFactor, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerVA, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerW, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdPower, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAEnergyWh, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAVoltage, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHASwitch, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAShortButton, this));
+    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHALongButton, this));
+
+    EnigmaIOTjsonController::connectInform ();
+}
+
+void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass* node, void* data) {
 	enigmaIotNode = node;
 
 	// You do node setup here. Use it as it was the normal setup() Arduino function
@@ -396,18 +413,6 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass *node, void* data) {
 	hlw8012.setVoltageMultiplier (HLW8012_VOLTAGE_RATIO);
 	setInterrupts ();
 #endif // ENABLE_HLW8012
-
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHACurrent, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdCurrent, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPFactor, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerVA, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPowerW, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdPower, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAEnergyWh, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAVoltage, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHASwitch, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAShortButton, this));
-    haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHALongButton, this));
 
     //relayStatus = relays->get (0);
 	//digitalWrite (RELAY_LED, relayStatus);
