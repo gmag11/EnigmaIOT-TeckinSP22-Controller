@@ -372,6 +372,10 @@ void CONTROLLER_CLASS_NAME::buttonCb (uint8_t pin, uint8_t event, uint8_t count,
 
 void CONTROLLER_CLASS_NAME::connectInform () {
 
+
+#if SUPPORT_HA_DISCOVERY    
+    DEBUG_INFO ("Add ha functions");
+
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHACurrent, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAdCurrent, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAPFactor, this));
@@ -384,6 +388,9 @@ void CONTROLLER_CLASS_NAME::connectInform () {
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHAShortButton, this));
     haCallQueue.push (std::bind (&CONTROLLER_CLASS_NAME::buildHALongButton, this));
 
+    DEBUG_INFO ("haCallQueue size is %d", haCallQueue.size ());
+#endif
+    DEBUG_INFO ("------EnigmaIOTjsonController::connectInform ()");
     EnigmaIOTjsonController::connectInform ();
 }
 
@@ -457,6 +464,9 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
             json["dcurrent"] = roundf (dcurrent * 1000) / 1000;
             double dW = dcurrent * (double)voltage;
             json["dW"] = roundf (dW * 1000) / 1000;
+        } else {
+            json["dcurrent"] = 0;
+            json["dW"] = 0;
         }
     }
     String key = relayKey;
