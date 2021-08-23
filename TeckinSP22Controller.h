@@ -9,7 +9,9 @@
 	#include "WProgram.h"
 #endif
 
+#ifndef TEST_MODE
 #define TEST_MODE 0
+#endif // TEST_MODE
 
 #ifndef ENABLE_HLW8012
 #define ENABLE_HLW8012  1
@@ -144,7 +146,7 @@ public:
 	 */
 	bool loadConfig ();
 
-    void connectInform ();
+    void connectInform () override;
 
 protected:
 	/**
