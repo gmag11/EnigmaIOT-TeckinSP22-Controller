@@ -1,4 +1,6 @@
-# EnigmaIOT SmartSwitch Controller
+# EnigmaIOT Teckin SP22 SmartSwitch Controller
+
+**This readme is Work in Progress**
 
 This example shows how all features of [EnigmaIOTjsonController.h](https://github.com/gmag11/EnigmaIOT/blob/dev/src/EnigmaIOTjsonController.h) may be used to build a complete node.
 
