@@ -26,9 +26,11 @@ const char* toggleKey = "toggle";
 const char* buttonKey = "button";
 const char* linkKey = "link";
 const char* bootStateKey = "bstate";
+#if USE_SCHEDULER
 const char* scheduleKey = "sched";
 const char* scheduleAddKey = "schedadd";
 const char* scheduleDelKey = "scheddel";
+#endif // USE_SCHEDULER
 const char* elemKey = "entry";
 const char* calibrateKey = "cal";
 const char* resetEnergyKey = "resetEnergy";
@@ -113,7 +115,8 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 			if (!sendRelayStatus ()) {
 				DEBUG_WARN ("Error sending relay status");
 				return false;
-			}
+            }
+#if USE_SCHEDULER
         } else if (!strcmp (doc[commandKey], scheduleKey)) {
             DEBUG_INFO ("Request schedule list");
             int index = -1;
@@ -134,7 +137,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
                 DEBUG_WARN ("Error sending schedule list");
                 return false;
             }
-
+#endif // USE_SCHEDULER
         } else if (!strcmp (doc[commandKey], bootStateKey)) {
 			DEBUG_INFO ("Request boot status configuration. Boot = %d",
                         relays->getBootStatus());
@@ -184,7 +187,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
 				return false;
 			}
 
-
+#if USE_SCHEDULER
         } else if (!strcmp (doc[commandKey], scheduleAddKey)){
             /****
             {
@@ -280,6 +283,7 @@ bool CONTROLLER_CLASS_NAME::processRxCommand (const uint8_t* address, const uint
             if (result >= 0) {
                 return scheduler->save ();
             }
+#endif //USE_SCHEDULER
         } else if (!strcmp (doc[commandKey], bootStateKey)) {
 			if (!doc.containsKey (bootStateKey)) {
 				DEBUG_WARN ("Wrong format");
@@ -407,9 +411,9 @@ void CONTROLLER_CLASS_NAME::setup (EnigmaIOTNodeClass* node, void* data) {
     // uint8_t relayPins[] = { RELAY };
     // uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
     // relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS);
-
+#if USE_SCHEDULER
     scheduler->onEvent (std::bind (&CONTROLLER_CLASS_NAME::onSchedulerEvent, this, _1));
-
+#endif // USE_SCHEDULER
 	// Send a 'hello' message when initalizing is finished
 	sendStartAnouncement ();
 #if ENABLE_HLW8012 && !TEST_MODE
@@ -470,7 +474,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
         }
     }
     String key = relayKey;
-    for (uint i = 0; i < NUM_RELAYS; i++) {
+    for (unsigned int i = 0; i < NUM_RELAYS; i++) {
         key += i;
         json[key.c_str ()] = relays->get (i) ? 1 : 0;
     }
@@ -480,7 +484,7 @@ void CONTROLLER_CLASS_NAME::sendHLWmeasurement () {
 	sendJson (json);
 }
 #endif // ENABLE_HLW8012
-
+#if USE_SCHEDULER
 void CONTROLLER_CLASS_NAME::onSchedulerEvent (sched_event_t event) {
     DEBUG_INFO ("Scheduler event %d, index %d, repeat %d", event.action, event.index, event.repeat);
     if (event.action < TURN_OFF || event.action > TOGGLE) {
@@ -504,15 +508,15 @@ void CONTROLLER_CLASS_NAME::onSchedulerEvent (sched_event_t event) {
     }
     sendRelayStatus ();
 }
-
+#endif // USE_SCHEDULER
 void CONTROLLER_CLASS_NAME::loop () {
 
 	// If your node stays allways awake do your periodic task here
 
 	button->loop ();
-    
+#if USE_SCHEDULER
     scheduler->loop ();
-
+#endif // USE_SCHEDULER
 #if ENABLE_HLW8012
     static unsigned long last = millis ();
 	if ((millis () - last) > UPDATE_TIME && !enigmaIotNode->getOTArunning()) {
@@ -587,10 +591,12 @@ bool CONTROLLER_CLASS_NAME::loadConfig () {
         DEBUG_WARN ("Error loading relays info");
         result = false;
     }
+#if USE_SCHEDULER
     if (!scheduler->load ()) {
         DEBUG_WARN ("Error loading schedule info");
         result = false;
     }
+#endif // USE_SCHEDULER
     DEBUG_INFO ("Configuration loaded. Result: %d", result);
     return result;
 
@@ -603,9 +609,11 @@ bool CONTROLLER_CLASS_NAME::saveConfig () {
     if (!relays->save ()) {
         result = false;
     }
+#if USE_SCHEDULER
     if (!scheduler->save ()) {
         result = false;
     }
+#endif // USE_SCHEDULER
     return result;
 }
 
@@ -615,14 +623,14 @@ bool CONTROLLER_CLASS_NAME::sendRelayStatus () {
 
 	json[commandKey] = relayKey;
     String key = relayKey;
-    for (uint i = 0; i < NUM_RELAYS; i++) {
+    for (unsigned int i = 0; i < NUM_RELAYS; i++) {
         key += i;
         json[key.c_str()] = relays->get (i) ? 1 : 0;    
     }
 
 	return sendJson (json);
 }
-
+#if USE_SCHEDULER
 bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
     DEBUG_DBG ("Schedule list\n%s", list);
     
@@ -644,7 +652,7 @@ bool CONTROLLER_CLASS_NAME::sendSchedulerList (char* list) {
     return sendJson (json);
     
 }
-
+#endif // USE_SCHEDULER
 bool CONTROLLER_CLASS_NAME::sendBootStatus () {
     const size_t capacity = JSON_OBJECT_SIZE (2);
     DynamicJsonDocument json (capacity);

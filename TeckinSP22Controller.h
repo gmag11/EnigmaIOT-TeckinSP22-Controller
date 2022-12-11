@@ -13,6 +13,10 @@
 #define TEST_MODE 0
 #endif // TEST_MODE
 
+#ifndef USE_SCHEDULER
+#define USE_SCHEDULER 1
+#endif // USE_SCHEDULER
+
 #ifndef ENABLE_HLW8012
 #define ENABLE_HLW8012  1
 #endif //ENABLE_HLW8012
@@ -22,7 +26,9 @@
 #endif // ENABLE_HLW8012
 #include <DebounceEvent.h>
 #include "RelaySet.h"
+#if USE_SCHEDULER
 #include "ActionScheduler.h"
+#endif // USE_SCHEDULER
 #include <TZ.h>
 #include <haEntity.h>
 #include <haSwitch.h>
@@ -125,7 +131,9 @@ public:
         uint8_t relayPins[] = { RELAY };
         uint8_t relayOnStates[] = { RELAY_ON_POLARITY };
         relays = new RelaySet (relayPins, relayOnStates, NUM_RELAYS, &FILESYSTEM);
+#if USE_SCHEDULER
         scheduler = new ActionScheduler (&FILESYSTEM);
+#endif // USE_SCHEDULER
     }
 
 	/**
@@ -154,9 +162,11 @@ protected:
 	  * @return Returns `true` if save was successful. `false` otherwise
 	  */
 	bool saveConfig ();
-    
+
+#if USE_SCHEDULER
     void onSchedulerEvent (sched_event_t event);
-	
+#endif // USE_SCHEDULER
+
 	bool sendCommandResp (const char* command, bool result);
 	
     bool sendStartAnouncement () {
@@ -180,8 +190,10 @@ protected:
 	DebounceEvent* button;
 	bool restartTriggd = false;
 	//bool relayStatus;
-    RelaySet *relays;
+    RelaySet* relays;
+#if USE_SCHEDULER
     ActionScheduler* scheduler;
+#endif // USE_SCHEDULER
     AsyncWiFiManagerParameter* bootStatusParam;
     AsyncWiFiManagerParameter* bootStatusListParam;
 
@@ -190,7 +202,7 @@ protected:
     double lastEnergy;
     clock_t lastGotEnergy;
 
-	void setInterrupts ();
+	void IRAM_ATTR setInterrupts ();
 
     void calibrate (unsigned int power = 60, unsigned int voltage = 225);
 
@@ -204,8 +216,10 @@ protected:
 	//void toggleRelay ();
 
 	bool sendRelayStatus ();
-    
+
+#if USE_SCHEDULER
     bool sendSchedulerList (char* list);
+#endif // USE_SCHEDULER
 
 	void sendButtonEvent (uint8_t pin, uint8_t event, uint8_t count, uint16_t length);
     
